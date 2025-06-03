@@ -3,10 +3,9 @@
 #include "cursor.h"
 #include "cursor_type.h"
 
-CursorType::CursorType(const CXType& handle) : m_handle(handle) {}
+CursorType::CursorType(const CXType &handle) : m_handle(handle) {}
 
-std::string CursorType::GetDisplayName(void) const
-{
+std::string CursorType::GetDisplayName(void) const {
     std::string display_name;
 
     Utils::toString(clang_getTypeSpelling(m_handle), display_name);

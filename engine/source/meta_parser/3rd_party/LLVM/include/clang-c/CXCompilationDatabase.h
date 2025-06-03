@@ -35,7 +35,7 @@ extern "C" {
  *
  * Must be freed by \c clang_CompilationDatabase_dispose
  */
-typedef void * CXCompilationDatabase;
+typedef void* CXCompilationDatabase;
 
 /**
  * Contains the results of a search in the compilation database
@@ -46,26 +46,26 @@ typedef void * CXCompilationDatabase;
  * commands is wrapped in this opaque data structure. It must be freed by
  * \c clang_CompileCommands_dispose.
  */
-typedef void * CXCompileCommands;
+typedef void* CXCompileCommands;
 
 /**
  * Represents the command line invocation to compile a specific file.
  */
-typedef void * CXCompileCommand;
+typedef void* CXCompileCommand;
 
 /**
  * Error codes for Compilation Database
  */
 typedef enum  {
-  /*
-   * No error occurred
-   */
-  CXCompilationDatabase_NoError = 0,
+    /*
+     * No error occurred
+     */
+    CXCompilationDatabase_NoError = 0,
 
-  /*
-   * Database can not be loaded
-   */
-  CXCompilationDatabase_CanNotLoadDatabase = 1
+    /*
+     * Database can not be loaded
+     */
+    CXCompilationDatabase_CanNotLoadDatabase = 1
 
 } CXCompilationDatabase_Error;
 
@@ -77,8 +77,8 @@ typedef enum  {
  * It must be freed by \c clang_CompilationDatabase_dispose.
  */
 CINDEX_LINKAGE CXCompilationDatabase
-clang_CompilationDatabase_fromDirectory(const char *BuildDir,
-                                        CXCompilationDatabase_Error *ErrorCode);
+clang_CompilationDatabase_fromDirectory(const char* BuildDir,
+                                        CXCompilationDatabase_Error* ErrorCode);
 
 /**
  * Free the given compilation database
@@ -92,7 +92,7 @@ clang_CompilationDatabase_dispose(CXCompilationDatabase);
  */
 CINDEX_LINKAGE CXCompileCommands
 clang_CompilationDatabase_getCompileCommands(CXCompilationDatabase,
-                                             const char *CompleteFileName);
+    const char* CompleteFileName);
 
 /**
  * Get all the compile commands in the given compilation database.

@@ -12,8 +12,7 @@
 
 class Class;
 
-class MetaParser
-{
+class MetaParser {
 public:
     static void prepare(void);
 
@@ -43,22 +42,24 @@ private:
     std::unordered_map<std::string, SchemaMoudle> m_schema_modules;
 
     std::vector<const char*>                    arguments = {{"-x",
-                                           "c++",
-                                           "-std=c++11",
-                                           "-D__REFLECTION_PARSER__",
-                                           "-DNDEBUG",
-                                           "-D__clang__",
-                                           "-w",
-                                           "-MG",
-                                           "-M",
-                                           "-ferror-limit=0",
-                                           "-o clangLog.txt"}};
+            "c++",
+            "-std=c++11",
+            "-D__REFLECTION_PARSER__",
+            "-DNDEBUG",
+            "-D__clang__",
+            "-w",
+            "-MG",
+            "-M",
+            "-ferror-limit=0",
+            "-o clangLog.txt"
+        }
+    };
     std::vector<Generator::GeneratorInterface*> m_generators;
 
     bool m_is_show_errors;
 
 private:
     bool        parseProject(void);
-    void        buildClassAST(const Cursor& cursor, Namespace& current_namespace);
+    void        buildClassAST(const Cursor &cursor, Namespace &current_namespace);
     std::string getIncludeFile(std::string name);
 };

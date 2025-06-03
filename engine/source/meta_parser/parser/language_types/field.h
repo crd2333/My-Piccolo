@@ -4,11 +4,10 @@
 
 class Class;
 
-class Field : public TypeInfo
-{
+class Field : public TypeInfo {
 
 public:
-    Field(const Cursor& cursor, const Namespace& current_namespace, Class* parent = nullptr);
+    Field(const Cursor &cursor, const Namespace &current_namespace, Class* parent = nullptr);
 
     virtual ~Field(void) {}
 

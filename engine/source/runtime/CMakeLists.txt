@@ -40,7 +40,7 @@ set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "Engine")
 target_compile_options(${TARGET_NAME} PUBLIC "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/permissive->")
 target_compile_options(${TARGET_NAME} PUBLIC "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/WX->")
 
-# Link dependencies    
+# Link dependencies
 target_link_libraries(${TARGET_NAME} PUBLIC spdlog::spdlog)
 target_link_libraries(${TARGET_NAME} PRIVATE tinyobjloader stb)
 target_link_libraries(${TARGET_NAME} PUBLIC glfw)
@@ -66,7 +66,7 @@ target_include_directories(
 
 
 target_include_directories(
-  ${TARGET_NAME} 
+  ${TARGET_NAME}
   PUBLIC $<BUILD_INTERFACE:${ENGINE_ROOT_DIR}/source>
   $<INSTALL_INTERFACE:include/${TARGET_NAME}-${PROJECT_VERSION}>
 )
@@ -74,23 +74,23 @@ target_include_directories(
 
 
 target_include_directories(
-  ${TARGET_NAME} 
+  ${TARGET_NAME}
   PUBLIC $<BUILD_INTERFACE:${JSON_INCLUDE}>
 )
 
 target_include_directories(
-  ${TARGET_NAME} 
+  ${TARGET_NAME}
   PUBLIC $<BUILD_INTERFACE:${THIRD_PARTY_DIR}/vulkanmemoryallocator/include>
 )
 
 target_include_directories(
-  ${TARGET_NAME} 
+  ${TARGET_NAME}
   PUBLIC $<BUILD_INTERFACE:${ENGINE_ROOT_DIR}/source/runtime>
   $<INSTALL_INTERFACE:include/${TARGET_NAME}-${PROJECT_VERSION}>
 )
 
 target_include_directories(
-  ${TARGET_NAME} 
+  ${TARGET_NAME}
   PUBLIC $<BUILD_INTERFACE:${ENGINE_ROOT_DIR}/source/runtime/function/render/include>
   $<INSTALL_INTERFACE:include/${TARGET_NAME}-${PROJECT_VERSION}>
 )

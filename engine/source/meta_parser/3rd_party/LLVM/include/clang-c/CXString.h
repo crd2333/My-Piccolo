@@ -36,19 +36,19 @@ extern "C" {
  * with the string data, call \c clang_disposeString() to free the string.
  */
 typedef struct {
-  const void *data;
-  unsigned private_flags;
+    const void* data;
+    unsigned private_flags;
 } CXString;
 
 typedef struct {
-  CXString *Strings;
-  unsigned Count;
+    CXString* Strings;
+    unsigned Count;
 } CXStringSet;
 
 /**
  * Retrieve the character data associated with the given string.
  */
-CINDEX_LINKAGE const char *clang_getCString(CXString string);
+CINDEX_LINKAGE const char* clang_getCString(CXString string);
 
 /**
  * Free the given string.
@@ -58,7 +58,7 @@ CINDEX_LINKAGE void clang_disposeString(CXString string);
 /**
  * Free the given string set.
  */
-CINDEX_LINKAGE void clang_disposeStringSet(CXStringSet *set);
+CINDEX_LINKAGE void clang_disposeStringSet(CXStringSet* set);
 
 /**
  * @}

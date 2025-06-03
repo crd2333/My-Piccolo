@@ -12,8 +12,7 @@
 #define PICCOLO_XSTR(s) PICCOLO_STR(s)
 #define PICCOLO_STR(s) #s
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
     std::filesystem::path executable_path(argv[0]);
     std::filesystem::path config_file_path = executable_path.parent_path() / "PiccoloEditor.ini";
 

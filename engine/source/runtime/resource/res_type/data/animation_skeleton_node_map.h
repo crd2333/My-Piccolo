@@ -3,16 +3,14 @@
 
 #include <string>
 #include <vector>
-namespace Piccolo
-{
+namespace Piccolo {
 
-    REFLECTION_TYPE(AnimSkelMap)
-    CLASS(AnimSkelMap, Fields)
-    {
-        REFLECTION_BODY(AnimSkelMap);
+REFLECTION_TYPE(AnimSkelMap)
+CLASS(AnimSkelMap, Fields) {
+    REFLECTION_BODY(AnimSkelMap);
 
-    public:
-        std::vector<int> convert;
-    };
+public:
+    std::vector<int> convert;
+};
 
 } // namespace Piccolo

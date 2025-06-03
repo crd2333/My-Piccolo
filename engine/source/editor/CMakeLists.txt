@@ -11,7 +11,7 @@ add_executable(${TARGET_NAME} ${EDITOR_HEADERS} ${EDITOR_SOURCES} ${EDITOR_RESOU
 add_compile_definitions("PICCOLO_ROOT_DIR=${BINARY_ROOT_DIR}")
 
 target_include_directories(
-  ${TARGET_NAME} 
+  ${TARGET_NAME}
   PUBLIC $<BUILD_INTERFACE:${THIRD_PARTY_DIR}/stb>
 )
 

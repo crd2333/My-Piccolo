@@ -2,7 +2,6 @@
 
 #include "runtime/core/base/macro.h"
 
-namespace Piccolo
-{
-    MotorComponentRes::~MotorComponentRes() {  }
+namespace Piccolo {
+MotorComponentRes::~MotorComponentRes() {  }
 } // namespace Piccolo

@@ -37,7 +37,7 @@ CINDEX_LINKAGE unsigned long long clang_getBuildSessionTimestamp(void);
  * Object encapsulating information about overlaying virtual
  * file/directories over the real file system.
  */
-typedef struct CXVirtualFileOverlayImpl *CXVirtualFileOverlay;
+typedef struct CXVirtualFileOverlayImpl* CXVirtualFileOverlay;
 
 /**
  * Create a \c CXVirtualFileOverlay object.
@@ -55,8 +55,8 @@ clang_VirtualFileOverlay_create(unsigned options);
  */
 CINDEX_LINKAGE enum CXErrorCode
 clang_VirtualFileOverlay_addFileMapping(CXVirtualFileOverlay,
-                                        const char *virtualPath,
-                                        const char *realPath);
+                                        const char* virtualPath,
+                                        const char* realPath);
 
 /**
  * Set the case sensitivity for the \c CXVirtualFileOverlay object.
@@ -66,7 +66,7 @@ clang_VirtualFileOverlay_addFileMapping(CXVirtualFileOverlay,
  */
 CINDEX_LINKAGE enum CXErrorCode
 clang_VirtualFileOverlay_setCaseSensitivity(CXVirtualFileOverlay,
-                                            int caseSensitive);
+    int caseSensitive);
 
 /**
  * Write out the \c CXVirtualFileOverlay object to a char buffer.
@@ -79,8 +79,8 @@ clang_VirtualFileOverlay_setCaseSensitivity(CXVirtualFileOverlay,
  */
 CINDEX_LINKAGE enum CXErrorCode
 clang_VirtualFileOverlay_writeToBuffer(CXVirtualFileOverlay, unsigned options,
-                                       char **out_buffer_ptr,
-                                       unsigned *out_buffer_size);
+                                       char** out_buffer_ptr,
+                                       unsigned* out_buffer_size);
 
 /**
  * free memory allocated by libclang, such as the buffer returned by
@@ -88,7 +88,7 @@ clang_VirtualFileOverlay_writeToBuffer(CXVirtualFileOverlay, unsigned options,
  *
  * \param buffer memory pointer to free.
  */
-CINDEX_LINKAGE void clang_free(void *buffer);
+CINDEX_LINKAGE void clang_free(void* buffer);
 
 /**
  * Dispose a \c CXVirtualFileOverlay object.
@@ -98,7 +98,7 @@ CINDEX_LINKAGE void clang_VirtualFileOverlay_dispose(CXVirtualFileOverlay);
 /**
  * Object encapsulating information about a module.map file.
  */
-typedef struct CXModuleMapDescriptorImpl *CXModuleMapDescriptor;
+typedef struct CXModuleMapDescriptorImpl* CXModuleMapDescriptor;
 
 /**
  * Create a \c CXModuleMapDescriptor object.
@@ -115,7 +115,7 @@ clang_ModuleMapDescriptor_create(unsigned options);
  */
 CINDEX_LINKAGE enum CXErrorCode
 clang_ModuleMapDescriptor_setFrameworkModuleName(CXModuleMapDescriptor,
-                                                 const char *name);
+    const char* name);
 
 /**
  * Sets the umbrealla header name that the module.map describes.
@@ -123,7 +123,7 @@ clang_ModuleMapDescriptor_setFrameworkModuleName(CXModuleMapDescriptor,
  */
 CINDEX_LINKAGE enum CXErrorCode
 clang_ModuleMapDescriptor_setUmbrellaHeader(CXModuleMapDescriptor,
-                                            const char *name);
+    const char* name);
 
 /**
  * Write out the \c CXModuleMapDescriptor object to a char buffer.
@@ -136,8 +136,8 @@ clang_ModuleMapDescriptor_setUmbrellaHeader(CXModuleMapDescriptor,
  */
 CINDEX_LINKAGE enum CXErrorCode
 clang_ModuleMapDescriptor_writeToBuffer(CXModuleMapDescriptor, unsigned options,
-                                       char **out_buffer_ptr,
-                                       unsigned *out_buffer_size);
+                                        char** out_buffer_ptr,
+                                        unsigned* out_buffer_size);
 
 /**
  * Dispose a \c CXModuleMapDescriptor object.

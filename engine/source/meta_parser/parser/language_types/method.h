@@ -4,11 +4,10 @@
 
 class Class;
 
-class Method : public TypeInfo
-{
+class Method : public TypeInfo {
 
 public:
-    Method(const Cursor& cursor, const Namespace& current_namespace, Class* parent = nullptr);
+    Method(const Cursor &cursor, const Namespace &current_namespace, Class* parent = nullptr);
 
     virtual ~Method(void) {}
 

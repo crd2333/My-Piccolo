@@ -10,27 +10,25 @@
 
 #include <memory>
 
-namespace Piccolo
-{
-    class ParticlePass;
-    class ParticleManager
-    {
-    public:
-        ParticleManager() = default;
+namespace Piccolo {
+class ParticlePass;
+class ParticleManager {
+public:
+    ParticleManager() = default;
 
-        ~ParticleManager() {};
+    ~ParticleManager() {};
 
-        void initialize();
-        void clear();
+    void initialize();
+    void clear();
 
-        void setParticlePass(ParticlePass* particle_pass);
+    void setParticlePass(ParticlePass* particle_pass);
 
-        const GlobalParticleRes& getGlobalParticleRes();
+    const GlobalParticleRes &getGlobalParticleRes();
 
-        void createParticleEmitter(const ParticleComponentRes&   particle_res,
-                                   ParticleEmitterTransformDesc& transform_desc);
+    void createParticleEmitter(const ParticleComponentRes   &particle_res,
+                               ParticleEmitterTransformDesc &transform_desc);
 
-    private:
-        GlobalParticleRes m_global_particle_res;
-    };
+private:
+    GlobalParticleRes m_global_particle_res;
+};
 } // namespace Piccolo

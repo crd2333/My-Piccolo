@@ -43,80 +43,77 @@ namespace kainjow {
 namespace mustache {
 
 template <typename string_type>
-string_type trim(const string_type& s) {
+string_type trim(const string_type &s) {
     auto it = s.begin();
-    while (it != s.end() && std::isspace(*it)) {
+    while (it != s.end() && std::isspace(*it))
         it++;
-    }
     auto rit = s.rbegin();
-    while (rit.base() != it && std::isspace(*rit)) {
+    while (rit.base() != it && std::isspace(*rit))
         rit++;
-    }
     return {it, rit.base()};
 }
 
 template <typename string_type>
-string_type html_escape(const string_type& s) {
+string_type html_escape(const string_type &s) {
     string_type ret;
-    ret.reserve(s.size()*2);
+    ret.reserve(s.size() * 2);
     for (const auto ch : s) {
         switch (ch) {
-            case '&':
-                ret.append({'&','a','m','p',';'});
-                break;
-            case '<':
-                ret.append({'&','l','t',';'});
-                break;
-            case '>':
-                ret.append({'&','g','t',';'});
-                break;
-            case '\"':
-                ret.append({'&','q','u','o','t',';'});
-                break;
-            case '\'':
-                ret.append({'&','a','p','o','s',';'});
-                break;
-            default:
-                ret.append(1, ch);
-                break;
+        case '&':
+            ret.append({'&', 'a', 'm', 'p', ';'});
+            break;
+        case '<':
+            ret.append({'&', 'l', 't', ';'});
+            break;
+        case '>':
+            ret.append({'&', 'g', 't', ';'});
+            break;
+        case '\"':
+            ret.append({'&', 'q', 'u', 'o', 't', ';'});
+            break;
+        case '\'':
+            ret.append({'&', 'a', 'p', 'o', 's', ';'});
+            break;
+        default:
+            ret.append(1, ch);
+            break;
         }
     }
     return ret;
 }
 
 template <typename string_type>
-std::vector<string_type> split(const string_type& s, typename string_type::value_type delim) {
+std::vector<string_type> split(const string_type &s, typename string_type::value_type delim) {
     std::vector<string_type> elems;
     std::basic_stringstream<typename string_type::value_type> ss(s);
     string_type item;
-    while (std::getline(ss, item, delim)) {
+    while (std::getline(ss, item, delim))
         elems.push_back(item);
-    }
     return elems;
 }
 
 template <typename string_type>
 class basic_renderer {
 public:
-    using type1 = std::function<string_type(const string_type&)>;
-    using type2 = std::function<string_type(const string_type&, bool escaped)>;
+    using type1 = std::function<string_type(const string_type &)>;
+    using type2 = std::function<string_type(const string_type &, bool escaped)>;
 
-    string_type operator()(const string_type& text) const {
+    string_type operator()(const string_type &text) const {
         return type1_(text);
     }
 
-    string_type operator()(const string_type& text, bool escaped) const {
+    string_type operator()(const string_type &text, bool escaped) const {
         return type2_(text, escaped);
     }
 
 private:
-    basic_renderer(const type1& t1, const type2& t2)
+    basic_renderer(const type1 &t1, const type2 &t2)
         : type1_(t1)
         , type2_(t2)
     {}
 
-    const type1& type1_;
-    const type2& type2_;
+    const type1 &type1_;
+    const type2 &type2_;
 
     template <typename StringType>
     friend class basic_mustache;
@@ -125,32 +122,31 @@ private:
 template <typename string_type>
 class basic_lambda_t {
 public:
-    using type1 = std::function<string_type(const string_type&)>;
-    using type2 = std::function<string_type(const string_type&, const basic_renderer<string_type>& render)>;
+    using type1 = std::function<string_type(const string_type &)>;
+    using type2 = std::function<string_type(const string_type &, const basic_renderer<string_type>& render)>;
 
-    basic_lambda_t(const type1& t) : type1_(new type1(t)) {}
-    basic_lambda_t(const type2& t) : type2_(new type2(t)) {}
+    basic_lambda_t(const type1 &t) : type1_(new type1(t)) {}
+    basic_lambda_t(const type2 &t) : type2_(new type2(t)) {}
 
     bool is_type1() const { return static_cast<bool>(type1_); }
     bool is_type2() const { return static_cast<bool>(type2_); }
 
-    const type1& type1_value() const { return *type1_; }
-    const type2& type2_value() const { return *type2_; }
+    const type1 &type1_value() const { return *type1_; }
+    const type2 &type2_value() const { return *type2_; }
 
     // Copying
-    basic_lambda_t(const basic_lambda_t& l) {
-        if (l.type1_) {
+    basic_lambda_t(const basic_lambda_t &l) {
+        if (l.type1_)
             type1_.reset(new type1(*l.type1_));
-        } else if (l.type2_) {
+        else if (l.type2_)
             type2_.reset(new type2(*l.type2_));
-        }
     }
 
-    string_type operator()(const string_type& text) const {
+    string_type operator()(const string_type &text) const {
         return (*type1_)(text);
     }
 
-    string_type operator()(const string_type& text, const basic_renderer<string_type>& render) const {
+    string_type operator()(const string_type &text, const basic_renderer<string_type> &render) const {
         return (*type2_)(text, render);
     }
 
@@ -190,104 +186,100 @@ public:
     // Construction
     basic_data() : basic_data(type::object) {
     }
-    basic_data(const string_type& string) : type_{type::string} {
+    basic_data(const string_type &string) : type_{type::string} {
         str_.reset(new string_type(string));
     }
     basic_data(const typename string_type::value_type* string) : type_{type::string} {
         str_.reset(new string_type(string));
     }
-    basic_data(const basic_object<string_type>& obj) : type_{type::object} {
+    basic_data(const basic_object<string_type> &obj) : type_{type::object} {
         obj_.reset(new basic_object<string_type>(obj));
     }
-    basic_data(const basic_list<string_type>& l) : type_{type::list} {
+    basic_data(const basic_list<string_type> &l) : type_{type::list} {
         list_.reset(new basic_list<string_type>(l));
     }
     basic_data(type t) : type_{t} {
         switch (type_) {
-            case type::object:
-                obj_.reset(new basic_object<string_type>);
-                break;
-            case type::string:
-                str_.reset(new string_type);
-                break;
-            case type::list:
-                list_.reset(new basic_list<string_type>);
-                break;
-            default:
-                break;
+        case type::object:
+            obj_.reset(new basic_object<string_type>);
+            break;
+        case type::string:
+            str_.reset(new string_type);
+            break;
+        case type::list:
+            list_.reset(new basic_list<string_type>);
+            break;
+        default:
+            break;
         }
     }
-    basic_data(const string_type& name, const basic_data& var) : basic_data{} {
+    basic_data(const string_type &name, const basic_data &var) : basic_data{} {
         set(name, var);
     }
-    basic_data(const basic_partial<string_type>& p) : type_{type::partial} {
+    basic_data(const basic_partial<string_type> &p) : type_{type::partial} {
         partial_.reset(new basic_partial<string_type>(p));
     }
-    basic_data(const basic_lambda<string_type>& l) : type_{type::lambda} {
+    basic_data(const basic_lambda<string_type> &l) : type_{type::lambda} {
         lambda_.reset(new basic_lambda_t<string_type>(l));
     }
-    basic_data(const basic_lambda2<string_type>& l) : type_{type::lambda2} {
+    basic_data(const basic_lambda2<string_type> &l) : type_{type::lambda2} {
         lambda_.reset(new basic_lambda_t<string_type>(l));
     }
-    basic_data(const basic_lambda_t<string_type>& l) {
-        if (l.is_type1()) {
+    basic_data(const basic_lambda_t<string_type> &l) {
+        if (l.is_type1())
             type_ = type::lambda;
-        } else if (l.is_type2()) {
+        else if (l.is_type2())
             type_ = type::lambda2;
-        }
         lambda_.reset(new basic_lambda_t<string_type>(l));
     }
     basic_data(bool b) : type_{b ? type::bool_true : type::bool_false} {
     }
 
     // Copying
-    basic_data(const basic_data& dat) : type_(dat.type_) {
-        if (dat.obj_) {
+    basic_data(const basic_data &dat) : type_(dat.type_) {
+        if (dat.obj_)
             obj_.reset(new basic_object<string_type>(*dat.obj_));
-        } else if (dat.str_) {
+        else if (dat.str_)
             str_.reset(new string_type(*dat.str_));
-        } else if (dat.list_) {
+        else if (dat.list_)
             list_.reset(new basic_list<string_type>(*dat.list_));
-        } else if (dat.partial_) {
+        else if (dat.partial_)
             partial_.reset(new basic_partial<string_type>(*dat.partial_));
-        } else if (dat.lambda_) {
+        else if (dat.lambda_)
             lambda_.reset(new basic_lambda_t<string_type>(*dat.lambda_));
-        }
     }
 
     // Move
     basic_data(basic_data&& dat) : type_{dat.type_} {
-        if (dat.obj_) {
+        if (dat.obj_)
             obj_ = std::move(dat.obj_);
-        } else if (dat.str_) {
+        else if (dat.str_)
             str_ = std::move(dat.str_);
-        } else if (dat.list_) {
+        else if (dat.list_)
             list_ = std::move(dat.list_);
-        } else if (dat.partial_) {
+        else if (dat.partial_)
             partial_ = std::move(dat.partial_);
-        } else if (dat.lambda_) {
+        else if (dat.lambda_)
             lambda_ = std::move(dat.lambda_);
-        }
         dat.type_ = type::invalid;
     }
-    basic_data& operator= (basic_data&& dat) {
+    basic_data &operator= (basic_data&& dat) {
         if (this != &dat) {
             obj_.reset();
             str_.reset();
             list_.reset();
             partial_.reset();
             lambda_.reset();
-            if (dat.obj_) {
+            if (dat.obj_)
                 obj_ = std::move(dat.obj_);
-            } else if (dat.str_) {
+            else if (dat.str_)
                 str_ = std::move(dat.str_);
-            } else if (dat.list_) {
+            else if (dat.list_)
                 list_ = std::move(dat.list_);
-            } else if (dat.partial_) {
+            else if (dat.partial_)
                 partial_ = std::move(dat.partial_);
-            } else if (dat.lambda_) {
+            else if (dat.lambda_)
                 lambda_ = std::move(dat.lambda_);
-            }
             type_ = dat.type_;
             dat.type_ = type::invalid;
         }
@@ -333,33 +325,29 @@ public:
     bool is_non_empty_object() const {
         return is_object() && !obj_->empty();
     }
-    void set(const string_type& name, const basic_data& var) {
+    void set(const string_type &name, const basic_data &var) {
         if (is_object()) {
             auto it = obj_->find(name);
-            if (it != obj_->end()) {
+            if (it != obj_->end())
                 obj_->erase(it);
-            }
-            obj_->insert(std::pair<string_type,basic_data>{name, var});
+            obj_->insert(std::pair<string_type, basic_data> {name, var});
         }
     }
-    const basic_data* get(const string_type& name) const {
-        if (!is_object()) {
+    const basic_data* get(const string_type &name) const {
+        if (!is_object())
             return nullptr;
-        }
-        const auto& it = obj_->find(name);
-        if (it == obj_->end()) {
+        const auto &it = obj_->find(name);
+        if (it == obj_->end())
             return nullptr;
-        }
         return &it->second;
     }
 
     // List data
-    void push_back(const basic_data& var) {
-        if (is_list()) {
+    void push_back(const basic_data &var) {
+        if (is_list())
             list_->push_back(var);
-        }
     }
-    const basic_list<string_type>& list_value() const {
+    const basic_list<string_type> &list_value() const {
         return *list_;
     }
     bool is_empty_list() const {
@@ -368,29 +356,29 @@ public:
     bool is_non_empty_list() const {
         return is_list() && !list_->empty();
     }
-    basic_data& operator<< (const basic_data& data) {
+    basic_data &operator<< (const basic_data &data) {
         push_back(data);
         return *this;
     }
 
     // String data
-    const string_type& string_value() const {
+    const string_type &string_value() const {
         return *str_;
     }
 
-    basic_data& operator[] (const string_type& key) {
+    basic_data &operator[] (const string_type &key) {
         return (*obj_)[key];
     }
 
-    const basic_partial<string_type>& partial_value() const {
+    const basic_partial<string_type> &partial_value() const {
         return (*partial_);
     }
 
-    const basic_lambda<string_type>& lambda_value() const {
+    const basic_lambda<string_type> &lambda_value() const {
         return lambda_->type1_value();
     }
 
-    const basic_lambda2<string_type>& lambda2_value() const {
+    const basic_lambda2<string_type> &lambda2_value() const {
         return lambda_->type2_value();
     }
 
@@ -429,8 +417,8 @@ public:
     virtual void push(const basic_data<string_type>* data) = 0;
     virtual void pop() = 0;
 
-    virtual const basic_data<string_type>* get(const string_type& name) const = 0;
-    virtual const basic_data<string_type>* get_partial(const string_type& name) const = 0;
+    virtual const basic_data<string_type>* get(const string_type &name) const = 0;
+    virtual const basic_data<string_type>* get_partial(const string_type &name) const = 0;
 };
 
 template <typename string_type>
@@ -451,50 +439,45 @@ public:
         items_.erase(items_.begin());
     }
 
-    virtual const basic_data<string_type>* get(const string_type& name) const override {
+    virtual const basic_data<string_type>* get(const string_type &name) const override {
         // process {{.}} name
-        if (name.size() == 1 && name.at(0) == '.') {
+        if (name.size() == 1 && name.at(0) == '.')
             return items_.front();
-        }
         if (name.find('.') == string_type::npos) {
             // process normal name without having to split which is slower
-            for (const auto& item : items_) {
+            for (const auto &item : items_) {
                 const auto var = item->get(name);
-                if (var) {
+                if (var)
                     return var;
-                }
             }
             return nullptr;
         }
         // process x.y-like name
         const auto names = split(name, '.');
-        for (const auto& item : items_) {
+        for (const auto &item : items_) {
             auto var = item;
-            for (const auto& n : names) {
+            for (const auto &n : names) {
                 var = var->get(n);
-                if (!var) {
+                if (!var)
                     break;
-                }
             }
-            if (var) {
+            if (var)
                 return var;
-            }
         }
         return nullptr;
     }
 
-    virtual const basic_data<string_type>* get_partial(const string_type& name) const override {
-        for (const auto& item : items_) {
+    virtual const basic_data<string_type>* get_partial(const string_type &name) const override {
+        for (const auto &item : items_) {
             const auto var = item->get(name);
-            if (var) {
+            if (var)
                 return var;
-            }
         }
         return nullptr;
     }
 
-    context(const context&) = delete;
-    context& operator= (const context&) = delete;
+    context(const context &) = delete;
+    context &operator= (const context &) = delete;
 
 private:
     std::vector<const basic_data<string_type>*> items_;
@@ -509,9 +492,8 @@ public:
     bool is_empty_or_contains_only_whitespace() const {
         for (const auto ch : data) {
             // don't look at newlines
-            if (ch != ' ' && ch != '\t') {
+            if (ch != ' ' && ch != '\t')
                 return false;
-            }
         }
         return true;
     }
@@ -525,13 +507,12 @@ public:
 template <typename string_type>
 class context_internal {
 public:
-    basic_context<string_type>& ctx;
+    basic_context<string_type> &ctx;
     delimiter_set<string_type> delim_set;
     line_buffer_state<string_type> line_buffer;
 
-    context_internal(basic_context<string_type>& a_ctx)
-        : ctx(a_ctx)
-    {
+    context_internal(basic_context<string_type> &a_ctx)
+        : ctx(a_ctx) {
     }
 };
 
@@ -548,7 +529,7 @@ enum class tag_type {
 };
 
 template <typename string_type>
-class mstch_tag /* gcc doesn't allow "tag tag;" so rename the class :( */ {
+class mstch_tag { /* gcc doesn't allow "tag tag;" so rename the class :( */
 public:
     string_type name;
     tag_type type = tag_type::text;
@@ -565,18 +546,17 @@ public:
 template <typename string_type>
 class context_pusher {
 public:
-    context_pusher(context_internal<string_type>& ctx, const basic_data<string_type>* data)
-        : ctx_(ctx)
-    {
+    context_pusher(context_internal<string_type> &ctx, const basic_data<string_type>* data)
+        : ctx_(ctx) {
         ctx.ctx.push(data);
     }
     ~context_pusher() {
         ctx_.ctx.pop();
     }
-    context_pusher(const context_pusher&) = delete;
-    context_pusher& operator= (const context_pusher&) = delete;
+    context_pusher(const context_pusher &) = delete;
+    context_pusher &operator= (const context_pusher &) = delete;
 private:
-    context_internal<string_type>& ctx_;
+    context_internal<string_type> &ctx_;
 };
 
 template <typename string_type>
@@ -595,10 +575,10 @@ public:
         stop,
         skip,
     };
-    using walk_callback = std::function<walk_control(component&)>;
+    using walk_callback = std::function<walk_control(component &)>;
 
     component() {}
-    component(const string_type& t, string_size_type p) : text(t), position(p) {}
+    component(const string_type &t, string_size_type p) : text(t), position(p) {}
 
     bool is_text() const {
         return tag.type == tag_type::text;
@@ -606,34 +586,31 @@ public:
 
     bool is_newline() const {
         return is_text() && ((text.size() == 2 && text[0] == '\r' && text[1] == '\n') ||
-        (text.size() == 1 && (text[0] == '\n' || text[0] == '\r')));
+                             (text.size() == 1 && (text[0] == '\n' || text[0] == '\r')));
     }
 
     bool is_non_newline_whitespace() const {
         return is_text() && !is_newline() && text.size() == 1 && (text[0] == ' ' || text[0] == '\t');
     }
 
-    void walk_children(const walk_callback& callback) {
-        for (auto& child : children) {
-            if (child.walk(callback) != walk_control::walk) {
+    void walk_children(const walk_callback &callback) {
+        for (auto &child : children) {
+            if (child.walk(callback) != walk_control::walk)
                 break;
-            }
         }
     }
 
 private:
-    walk_control walk(const walk_callback& callback) {
+    walk_control walk(const walk_callback &callback) {
         walk_control control{callback(*this)};
-        if (control == walk_control::stop) {
+        if (control == walk_control::stop)
             return control;
-        } else if (control == walk_control::skip) {
+        else if (control == walk_control::skip)
             return walk_control::walk;
-        }
-        for (auto& child : children) {
+        for (auto &child : children) {
             control = child.walk(callback);
-            if (control == walk_control::stop) {
+            if (control == walk_control::stop)
                 return control;
-            }
         }
         return control;
     }
@@ -642,13 +619,12 @@ private:
 template <typename string_type>
 class parser {
 public:
-    parser(const string_type& input, context_internal<string_type>& ctx, component<string_type>& root_component, string_type& error_message)
-    {
+    parser(const string_type &input, context_internal<string_type> &ctx, component<string_type> &root_component, string_type &error_message) {
         parse(input, ctx, root_component, error_message);
     }
 
 private:
-    void parse(const string_type& input, context_internal<string_type>& ctx, component<string_type>& root_component, string_type& error_message) const {
+    void parse(const string_type &input, context_internal<string_type> &ctx, component<string_type> &root_component, string_type &error_message) const {
         using string_size_type = typename string_type::size_type;
         using streamstring = std::basic_ostringstream<typename string_type::value_type>;
 
@@ -691,7 +667,7 @@ private:
                 parse_tag = true;
             } else {
                 bool parsed_whitespace = false;
-                for (const auto& whitespace_text : whitespace) {
+                for (const auto &whitespace_text : whitespace) {
                     if (input.compare(input_position, whitespace_text.size(), whitespace_text) == 0) {
                         process_current_text();
 
@@ -705,17 +681,15 @@ private:
                 }
 
                 if (!parsed_whitespace) {
-                    if (current_text.empty()) {
+                    if (current_text.empty())
                         current_text_position = input_position;
-                    }
                     current_text.append(1, input[input_position]);
                     input_position++;
                 }
             }
 
-            if (!parse_tag) {
+            if (!parse_tag)
                 continue;
-            }
 
             // Find the next tag start delimiter
             const string_size_type tag_location_start = input_position;
@@ -792,41 +766,35 @@ private:
             comp.children.pop_back(); // remove now useless end section component
             return component<string_type>::walk_control::walk;
         });
-        if (!error_message.empty()) {
+        if (!error_message.empty())
             return;
-        }
     }
 
     bool is_set_delimiter_valid(const string_type& delimiter) const {
         // "Custom delimiters may not contain whitespace or the equals sign."
         for (const auto ch : delimiter) {
-            if (ch == '=' || std::isspace(ch)) {
+            if (ch == '=' || std::isspace(ch))
                 return false;
-            }
         }
         return true;
     }
 
     bool parse_set_delimiter_tag(const string_type& contents, delimiter_set<string_type>& delimiter_set) const {
         // Smallest legal tag is "=X X="
-        if (contents.size() < 5) {
+        if (contents.size() < 5)
             return false;
-        }
-        if (contents.back() != '=') {
+        if (contents.back() != '=')
             return false;
-        }
         const auto contents_substr = trim(contents.substr(1, contents.size() - 2));
         const auto spacepos = contents_substr.find(' ');
-        if (spacepos == string_type::npos) {
+        if (spacepos == string_type::npos)
             return false;
-        }
         const auto nonspace = contents_substr.find_first_not_of(' ', spacepos + 1);
         assert(nonspace != string_type::npos);
         const string_type begin = contents_substr.substr(0, spacepos);
         const string_type end = contents_substr.substr(nonspace, contents_substr.size() - nonspace);
-        if (!is_set_delimiter_valid(begin) || !is_set_delimiter_valid(end)) {
+        if (!is_set_delimiter_valid(begin) || !is_set_delimiter_valid(end))
             return false;
-        }
         delimiter_set.begin = begin;
         delimiter_set.end = end;
         return true;
@@ -841,27 +809,27 @@ private:
             tag.name.clear();
         } else {
             switch (contents.at(0)) {
-                case '#':
-                    tag.type = tag_type::section_begin;
-                    break;
-                case '^':
-                    tag.type = tag_type::section_begin_inverted;
-                    break;
-                case '/':
-                    tag.type = tag_type::section_end;
-                    break;
-                case '>':
-                    tag.type = tag_type::partial;
-                    break;
-                case '&':
-                    tag.type = tag_type::unescaped_variable;
-                    break;
-                case '!':
-                    tag.type = tag_type::comment;
-                    break;
-                default:
-                    tag.type = tag_type::variable;
-                    break;
+            case '#':
+                tag.type = tag_type::section_begin;
+                break;
+            case '^':
+                tag.type = tag_type::section_begin_inverted;
+                break;
+            case '/':
+                tag.type = tag_type::section_end;
+                break;
+            case '>':
+                tag.type = tag_type::partial;
+                break;
+            case '&':
+                tag.type = tag_type::unescaped_variable;
+                break;
+            case '!':
+                tag.type = tag_type::comment;
+                break;
+            default:
+                tag.type = tag_type::variable;
+                break;
             }
             if (tag.type == tag_type::variable) {
                 tag.name = contents;
@@ -879,7 +847,7 @@ class basic_mustache {
 public:
     using string_type = StringType;
 
-    basic_mustache(const string_type& input)
+    basic_mustache(const string_type &input)
         : basic_mustache() {
         context<string_type> ctx;
         context_internal<string_type> context{ctx};
@@ -890,30 +858,30 @@ public:
         return error_message_.empty();
     }
 
-    const string_type& error_message() const {
+    const string_type &error_message() const {
         return error_message_;
     }
 
-    using escape_handler = std::function<string_type(const string_type&)>;
+    using escape_handler = std::function<string_type(const string_type &)>;
     void set_custom_escape(const escape_handler& escape_fn) {
         escape_ = escape_fn;
     }
 
     template <typename stream_type>
-    stream_type& render(const basic_data<string_type>& data, stream_type& stream) {
+    stream_type &render(const basic_data<string_type> &data, stream_type &stream) {
         render(data, [&stream](const string_type& str) {
             stream << str;
         });
         return stream;
     }
 
-    string_type render(const basic_data<string_type>& data) {
+    string_type render(const basic_data<string_type> &data) {
         std::basic_ostringstream<typename string_type::value_type> ss;
         return render(data, ss).str();
     }
 
     template <typename stream_type>
-    stream_type& render(basic_context<string_type>& ctx, stream_type& stream) {
+    stream_type &render(basic_context<string_type> &ctx, stream_type &stream) {
         context_internal<string_type> context{ctx};
         render([&stream](const string_type& str) {
             stream << str;
@@ -921,13 +889,13 @@ public:
         return stream;
     }
 
-    string_type render(basic_context<string_type>& ctx) {
+    string_type render(basic_context<string_type> &ctx) {
         std::basic_ostringstream<typename string_type::value_type> ss;
         return render(ctx, ss).str();
     }
 
     using render_handler = std::function<void(const string_type&)>;
-    void render(const basic_data<string_type>& data, const render_handler& handler) {
+    void render(const basic_data<string_type> &data, const render_handler &handler) {
         if (!is_valid()) {
             return;
         }
@@ -936,16 +904,14 @@ public:
         render(handler, context);
     }
 
-    basic_mustache()
-        : escape_(html_escape<string_type>)
+    basic_mustache() : escape_(html_escape<string_type>)
     {
     }
-    
 private:
-    using string_size_type = typename string_type::size_type;
+using string_size_type = typename string_type::size_type;
 
 
-    basic_mustache(const string_type& input, context_internal<string_type>& ctx)
+    basic_mustache(const string_type &input, context_internal<string_type> &ctx)
         : basic_mustache() {
         parser<string_type> parser{input, ctx, root_component_, error_message_};
     }
@@ -967,7 +933,6 @@ private:
             render_current_line(handler, ctx, nullptr);
         }
     }
-
     void render_current_line(const render_handler& handler, context_internal<string_type>& ctx, const component<string_type>* comp) const {
         // We're at the end of a line, so check the line buffer state to see
         // if the line had tags in it, and also if the line is now empty or
@@ -991,64 +956,58 @@ private:
 
     typename component<string_type>::walk_control render_component(const render_handler& handler, context_internal<string_type>& ctx, component<string_type>& comp) {
         if (comp.is_text()) {
-            if (comp.is_newline()) {
+            if (comp.is_newline())
                 render_current_line(handler, ctx, &comp);
-            } else {
+            else
                 render_result(ctx, comp.text);
-            }
+
             return component<string_type>::walk_control::walk;
         }
 
         const mstch_tag<string_type>& tag{comp.tag};
         const basic_data<string_type>* var = nullptr;
         switch (tag.type) {
-            case tag_type::variable:
-            case tag_type::unescaped_variable:
-                if ((var = ctx.ctx.get(tag.name)) != nullptr) {
-                    if (!render_variable(handler, var, ctx, tag.type == tag_type::variable)) {
+        case tag_type::variable:
+        case tag_type::unescaped_variable:
+            if ((var = ctx.ctx.get(tag.name)) != nullptr) {
+                if (!render_variable(handler, var, ctx, tag.type == tag_type::variable))
+                    return component<string_type>::walk_control::stop;
+            }
+            break;
+        case tag_type::section_begin:
+            if ((var = ctx.ctx.get(tag.name)) != nullptr) {
+                if (var->is_lambda() || var->is_lambda2()) {
+                    if (!render_lambda(handler, var, ctx, render_lambda_escape::optional, *comp.tag.section_text, true))
                         return component<string_type>::walk_control::stop;
-                    }
-                }
-                break;
-            case tag_type::section_begin:
-                if ((var = ctx.ctx.get(tag.name)) != nullptr) {
-                    if (var->is_lambda() || var->is_lambda2()) {
-                        if (!render_lambda(handler, var, ctx, render_lambda_escape::optional, *comp.tag.section_text, true)) {
-                            return component<string_type>::walk_control::stop;
-                        }
-                    } else if (!var->is_false() && !var->is_empty_list()) {
-                        render_section(handler, ctx, comp, var);
-                    }
-                }
-                return component<string_type>::walk_control::skip;
-            case tag_type::section_begin_inverted:
-                if ((var = ctx.ctx.get(tag.name)) == nullptr || var->is_false() || var->is_empty_list()) {
+                } else if (!var->is_false() && !var->is_empty_list())
                     render_section(handler, ctx, comp, var);
-                }
-                return component<string_type>::walk_control::skip;
-            case tag_type::partial:
-                if ((var = ctx.ctx.get_partial(tag.name)) != nullptr && (var->is_partial() || var->is_string())) {
-                    const auto& partial_result = var->is_partial() ? var->partial_value()() : var->string_value();
-                    basic_mustache tmpl{partial_result};
-                    tmpl.set_custom_escape(escape_);
-                    if (!tmpl.is_valid()) {
+            }
+            return component<string_type>::walk_control::skip;
+        case tag_type::section_begin_inverted:
+            if ((var = ctx.ctx.get(tag.name)) == nullptr || var->is_false() || var->is_empty_list())
+                render_section(handler, ctx, comp, var);
+            return component<string_type>::walk_control::skip;
+        case tag_type::partial:
+            if ((var = ctx.ctx.get_partial(tag.name)) != nullptr && (var->is_partial() || var->is_string())) {
+                const auto& partial_result = var->is_partial() ? var->partial_value()() : var->string_value();
+                basic_mustache tmpl{partial_result};
+                tmpl.set_custom_escape(escape_);
+                if (!tmpl.is_valid())
+                    error_message_ = tmpl.error_message();
+                else {
+                    tmpl.render(handler, ctx, false);
+                    if (!tmpl.is_valid())
                         error_message_ = tmpl.error_message();
-                    } else {
-                        tmpl.render(handler, ctx, false);
-                        if (!tmpl.is_valid()) {
-                            error_message_ = tmpl.error_message();
-                        }
-                    }
-                    if (!tmpl.is_valid()) {
-                        return component<string_type>::walk_control::stop;
-                    }
                 }
-                break;
-            case tag_type::set_delimiter:
-                ctx.delim_set = *comp.tag.delim_set;
-                break;
-            default:
-                break;
+                if (!tmpl.is_valid())
+                    return component<string_type>::walk_control::stop;
+            }
+            break;
+        case tag_type::set_delimiter:
+            ctx.delim_set = *comp.tag.delim_set;
+            break;
+        default:
+            break;
         }
 
         return component<string_type>::walk_control::walk;
@@ -1075,15 +1034,15 @@ private:
                 }
                 bool do_escape = false;
                 switch (escape) {
-                    case render_lambda_escape::escape:
-                        do_escape = true;
-                        break;
-                    case render_lambda_escape::unescape:
-                        do_escape = false;
-                        break;
-                    case render_lambda_escape::optional:
-                        do_escape = escaped;
-                        break;
+                case render_lambda_escape::escape:
+                    do_escape = true;
+                    break;
+                case render_lambda_escape::unescape:
+                    do_escape = false;
+                    break;
+                case render_lambda_escape::optional:
+                    do_escape = escaped;
+                    break;
                 }
                 return do_escape ? escape_(str) : str;
             };

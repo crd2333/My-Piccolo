@@ -35,8 +35,8 @@ extern "C" {
  * A parsed comment.
  */
 typedef struct {
-  const void *ASTNode;
-  CXTranslationUnit TranslationUnit;
+    const void* ASTNode;
+    CXTranslationUnit TranslationUnit;
 } CXComment;
 
 /**
@@ -52,110 +52,110 @@ CINDEX_LINKAGE CXComment clang_Cursor_getParsedComment(CXCursor C);
  * (plain text) or neither (the root AST node).
  */
 enum CXCommentKind {
-  /**
-   * Null comment.  No AST node is constructed at the requested location
-   * because there is no text or a syntax error.
-   */
-  CXComment_Null = 0,
+    /**
+     * Null comment.  No AST node is constructed at the requested location
+     * because there is no text or a syntax error.
+     */
+    CXComment_Null = 0,
 
-  /**
-   * Plain text.  Inline content.
-   */
-  CXComment_Text = 1,
+    /**
+     * Plain text.  Inline content.
+     */
+    CXComment_Text = 1,
 
-  /**
-   * A command with word-like arguments that is considered inline content.
-   *
-   * For example: \\c command.
-   */
-  CXComment_InlineCommand = 2,
+    /**
+     * A command with word-like arguments that is considered inline content.
+     *
+     * For example: \\c command.
+     */
+    CXComment_InlineCommand = 2,
 
-  /**
-   * HTML start tag with attributes (name-value pairs).  Considered
-   * inline content.
-   *
-   * For example:
-   * \verbatim
-   * <br> <br /> <a href="http://example.org/">
-   * \endverbatim
-   */
-  CXComment_HTMLStartTag = 3,
+    /**
+     * HTML start tag with attributes (name-value pairs).  Considered
+     * inline content.
+     *
+     * For example:
+     * \verbatim
+     * <br> <br /> <a href="http://example.org/">
+     * \endverbatim
+     */
+    CXComment_HTMLStartTag = 3,
 
-  /**
-   * HTML end tag.  Considered inline content.
-   *
-   * For example:
-   * \verbatim
-   * </a>
-   * \endverbatim
-   */
-  CXComment_HTMLEndTag = 4,
+    /**
+     * HTML end tag.  Considered inline content.
+     *
+     * For example:
+     * \verbatim
+     * </a>
+     * \endverbatim
+     */
+    CXComment_HTMLEndTag = 4,
 
-  /**
-   * A paragraph, contains inline comment.  The paragraph itself is
-   * block content.
-   */
-  CXComment_Paragraph = 5,
+    /**
+     * A paragraph, contains inline comment.  The paragraph itself is
+     * block content.
+     */
+    CXComment_Paragraph = 5,
 
-  /**
-   * A command that has zero or more word-like arguments (number of
-   * word-like arguments depends on command name) and a paragraph as an
-   * argument.  Block command is block content.
-   *
-   * Paragraph argument is also a child of the block command.
-   *
-   * For example: \has 0 word-like arguments and a paragraph argument.
-   *
-   * AST nodes of special kinds that parser knows about (e. g., \\param
-   * command) have their own node kinds.
-   */
-  CXComment_BlockCommand = 6,
+    /**
+     * A command that has zero or more word-like arguments (number of
+     * word-like arguments depends on command name) and a paragraph as an
+     * argument.  Block command is block content.
+     *
+     * Paragraph argument is also a child of the block command.
+     *
+     * For example: \has 0 word-like arguments and a paragraph argument.
+     *
+     * AST nodes of special kinds that parser knows about (e. g., \\param
+     * command) have their own node kinds.
+     */
+    CXComment_BlockCommand = 6,
 
-  /**
-   * A \\param or \\arg command that describes the function parameter
-   * (name, passing direction, description).
-   *
-   * For example: \\param [in] ParamName description.
-   */
-  CXComment_ParamCommand = 7,
+    /**
+     * A \\param or \\arg command that describes the function parameter
+     * (name, passing direction, description).
+     *
+     * For example: \\param [in] ParamName description.
+     */
+    CXComment_ParamCommand = 7,
 
-  /**
-   * A \\tparam command that describes a template parameter (name and
-   * description).
-   *
-   * For example: \\tparam T description.
-   */
-  CXComment_TParamCommand = 8,
+    /**
+     * A \\tparam command that describes a template parameter (name and
+     * description).
+     *
+     * For example: \\tparam T description.
+     */
+    CXComment_TParamCommand = 8,
 
-  /**
-   * A verbatim block command (e. g., preformatted code).  Verbatim
-   * block has an opening and a closing command and contains multiple lines of
-   * text (\c CXComment_VerbatimBlockLine child nodes).
-   *
-   * For example:
-   * \\verbatim
-   * aaa
-   * \\endverbatim
-   */
-  CXComment_VerbatimBlockCommand = 9,
+    /**
+     * A verbatim block command (e. g., preformatted code).  Verbatim
+     * block has an opening and a closing command and contains multiple lines of
+     * text (\c CXComment_VerbatimBlockLine child nodes).
+     *
+     * For example:
+     * \\verbatim
+     * aaa
+     * \\endverbatim
+     */
+    CXComment_VerbatimBlockCommand = 9,
 
-  /**
-   * A line of text that is contained within a
-   * CXComment_VerbatimBlockCommand node.
-   */
-  CXComment_VerbatimBlockLine = 10,
+    /**
+     * A line of text that is contained within a
+     * CXComment_VerbatimBlockCommand node.
+     */
+    CXComment_VerbatimBlockLine = 10,
 
-  /**
-   * A verbatim line command.  Verbatim line has an opening command,
-   * a single line of text (up to the newline after the opening command) and
-   * has no closing command.
-   */
-  CXComment_VerbatimLine = 11,
+    /**
+     * A verbatim line command.  Verbatim line has an opening command,
+     * a single line of text (up to the newline after the opening command) and
+     * has no closing command.
+     */
+    CXComment_VerbatimLine = 11,
 
-  /**
-   * A full comment attached to a declaration, contains block content.
-   */
-  CXComment_FullComment = 12
+    /**
+     * A full comment attached to a declaration, contains block content.
+     */
+    CXComment_FullComment = 12
 };
 
 /**
@@ -163,46 +163,46 @@ enum CXCommentKind {
  * command semantics in Doxygen.
  */
 enum CXCommentInlineCommandRenderKind {
-  /**
-   * Command argument should be rendered in a normal font.
-   */
-  CXCommentInlineCommandRenderKind_Normal,
+    /**
+     * Command argument should be rendered in a normal font.
+     */
+    CXCommentInlineCommandRenderKind_Normal,
 
-  /**
-   * Command argument should be rendered in a bold font.
-   */
-  CXCommentInlineCommandRenderKind_Bold,
+    /**
+     * Command argument should be rendered in a bold font.
+     */
+    CXCommentInlineCommandRenderKind_Bold,
 
-  /**
-   * Command argument should be rendered in a monospaced font.
-   */
-  CXCommentInlineCommandRenderKind_Monospaced,
+    /**
+     * Command argument should be rendered in a monospaced font.
+     */
+    CXCommentInlineCommandRenderKind_Monospaced,
 
-  /**
-   * Command argument should be rendered emphasized (typically italic
-   * font).
-   */
-  CXCommentInlineCommandRenderKind_Emphasized
+    /**
+     * Command argument should be rendered emphasized (typically italic
+     * font).
+     */
+    CXCommentInlineCommandRenderKind_Emphasized
 };
 
 /**
  * Describes parameter passing direction for \\param or \\arg command.
  */
 enum CXCommentParamPassDirection {
-  /**
-   * The parameter is an input parameter.
-   */
-  CXCommentParamPassDirection_In,
+    /**
+     * The parameter is an input parameter.
+     */
+    CXCommentParamPassDirection_In,
 
-  /**
-   * The parameter is an output parameter.
-   */
-  CXCommentParamPassDirection_Out,
+    /**
+     * The parameter is an output parameter.
+     */
+    CXCommentParamPassDirection_Out,
 
-  /**
-   * The parameter is an input and output parameter.
-   */
-  CXCommentParamPassDirection_InOut
+    /**
+     * The parameter is an input and output parameter.
+     */
+    CXCommentParamPassDirection_InOut
 };
 
 /**
@@ -289,7 +289,7 @@ unsigned clang_InlineCommandComment_getNumArgs(CXComment Comment);
  */
 CINDEX_LINKAGE
 CXString clang_InlineCommandComment_getArgText(CXComment Comment,
-                                               unsigned ArgIdx);
+    unsigned ArgIdx);
 
 /**
  * \param Comment a \c CXComment_HTMLStartTag or \c CXComment_HTMLEndTag AST
@@ -359,7 +359,7 @@ unsigned clang_BlockCommandComment_getNumArgs(CXComment Comment);
  */
 CINDEX_LINKAGE
 CXString clang_BlockCommandComment_getArgText(CXComment Comment,
-                                              unsigned ArgIdx);
+    unsigned ArgIdx);
 
 /**
  * \param Comment a \c CXComment_BlockCommand or
@@ -412,7 +412,7 @@ unsigned clang_ParamCommandComment_isDirectionExplicit(CXComment Comment);
  */
 CINDEX_LINKAGE
 enum CXCommentParamPassDirection clang_ParamCommandComment_getDirection(
-                                                            CXComment Comment);
+    CXComment Comment);
 
 /**
  * \param Comment a \c CXComment_TParamCommand AST node.

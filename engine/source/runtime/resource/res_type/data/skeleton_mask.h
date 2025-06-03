@@ -2,17 +2,15 @@
 #include "runtime/core/meta/reflection/reflection.h"
 #include <string>
 #include <vector>
-namespace Piccolo
-{
+namespace Piccolo {
 
-    REFLECTION_TYPE(BoneBlendMask)
-    CLASS(BoneBlendMask, Fields)
-    {
-        REFLECTION_BODY(BoneBlendMask);
+REFLECTION_TYPE(BoneBlendMask)
+CLASS(BoneBlendMask, Fields) {
+    REFLECTION_BODY(BoneBlendMask);
 
-    public:
-        std::string      skeleton_file_path;
-        std::vector<int> enabled;
-    };
+public:
+    std::string      skeleton_file_path;
+    std::vector<int> enabled;
+};
 
 } // namespace Piccolo

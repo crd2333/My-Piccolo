@@ -6,8 +6,7 @@ class Global;
 class Function;
 class Enum;
 
-struct SchemaMoudle
-{
+struct SchemaMoudle {
     std::string name;
 
     std::vector<std::shared_ptr<Class>> classes;

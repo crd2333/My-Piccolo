@@ -3,12 +3,11 @@
 
 #include "cursor.h"
 
-Cursor::Cursor(const CXCursor& handle) : m_handle(handle) {}
+Cursor::Cursor(const CXCursor &handle) : m_handle(handle) {}
 
 CXCursorKind Cursor::getKind(void) const { return m_handle.kind; }
 
-std::string Cursor::getSpelling(void) const
-{
+std::string Cursor::getSpelling(void) const {
     std::string spelling;
 
     Utils::toString(clang_getCursorSpelling(m_handle), spelling);
@@ -16,8 +15,7 @@ std::string Cursor::getSpelling(void) const
     return spelling;
 }
 
-std::string Cursor::getDisplayName(void) const
-{
+std::string Cursor::getDisplayName(void) const {
     std::string display_name;
 
     Utils::toString(clang_getCursorDisplayName(m_handle), display_name);
@@ -25,8 +23,7 @@ std::string Cursor::getDisplayName(void) const
     return display_name;
 }
 
-std::string Cursor::getSourceFile(void) const
-{
+std::string Cursor::getSourceFile(void) const {
     auto range = clang_Cursor_getSpellingNameRange(m_handle, 0, 0);
 
     auto start = clang_getRangeStart(range);
@@ -47,8 +44,7 @@ bool Cursor::isDefinition(void) const { return clang_isCursorDefinition(m_handle
 
 CursorType Cursor::getType(void) const { return clang_getCursorType(m_handle); }
 
-Cursor::List Cursor::getChildren(void) const
-{
+Cursor::List Cursor::getChildren(void) const {
     List children;
 
     auto visitor = [](CXCursor cursor, CXCursor parent, CXClientData data) {
