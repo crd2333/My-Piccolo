@@ -48,13 +48,13 @@ TypeMeta::TypeMeta(std::string type_name) : m_type_name(type_name) {
     m_fields.clear();
     m_methods.clear();
 
-    auto fileds_iter = m_field_map.equal_range(type_name);
-    while (fileds_iter.first != fileds_iter.second) {
-        FieldAccessor f_field(fileds_iter.first->second);
+    auto fields_iter = m_field_map.equal_range(type_name);
+    while (fields_iter.first != fields_iter.second) {
+        FieldAccessor f_field(fields_iter.first->second);
         m_fields.emplace_back(f_field);
         m_is_valid = true;
 
-        ++fileds_iter.first;
+        ++fields_iter.first;
     }
 
     auto methods_iter = m_method_map.equal_range(type_name);

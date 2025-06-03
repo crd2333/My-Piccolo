@@ -169,7 +169,7 @@ void DebugDrawAllocator::setupDescriptorSet() {
         RHIDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.pNext = NULL;
-        allocInfo.descriptorPool = m_rhi->getDescriptorPoor();
+        allocInfo.descriptorPool = m_rhi->getDescriptorPool();
         allocInfo.descriptorSetCount = 1;
         allocInfo.pSetLayouts = &m_descriptor.layout;
 

@@ -100,11 +100,11 @@ public:
     RenderSwapData &getLogicSwapData();
     RenderSwapData &getRenderSwapData();
     void            swapLogicRenderData();
-    void            resetLevelRsourceSwapData();
+    void            resetLevelResourceSwapData();
     void            resetGameObjectResourceSwapData();
     void            resetGameObjectToDelete();
     void            resetCameraSwapData();
-    void            resetPartilceBatchSwapData();
+    void            resetParticleBatchSwapData();
     void            resetEmitterTickSwapData();
     void            resetEmitterTransformSwapData();
 

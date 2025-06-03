@@ -117,7 +117,7 @@ struct ParticleBillboardPerframeStorageBufferObject {
     float     _padding_right_position;
     Vector3   up_direction;
     float     _padding_up_direction;
-    Vector3   foward_direction;
+    Vector3   forward_direction;
     float     _padding_forward_position;
 };
 

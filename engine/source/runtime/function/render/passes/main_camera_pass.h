@@ -13,7 +13,7 @@ namespace Piccolo {
 class RenderResourceBase;
 
 struct MainCameraPassInitInfo : RenderPassInitInfo {
-    bool enble_fxaa;
+    bool enable_fxaa;
 };
 
 class MainCameraPass : public RenderPass {

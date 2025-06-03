@@ -9,7 +9,7 @@
 
 namespace Piccolo {
 struct MeshVertex {
-    struct VulkanMeshVertexPostition {
+    struct VulkanMeshVertexPosition {
         Vector3 position;
     };
 
@@ -32,7 +32,7 @@ struct MeshVertex {
 
         // position
         binding_descriptions[0].binding   = 0;
-        binding_descriptions[0].stride    = sizeof(VulkanMeshVertexPostition);
+        binding_descriptions[0].stride    = sizeof(VulkanMeshVertexPosition);
         binding_descriptions[0].inputRate = RHI_VERTEX_INPUT_RATE_VERTEX;
         // varying blending
         binding_descriptions[1].binding   = 1;
@@ -52,7 +52,7 @@ struct MeshVertex {
         attribute_descriptions[0].binding  = 0;
         attribute_descriptions[0].location = 0;
         attribute_descriptions[0].format   = RHI_FORMAT_R32G32B32_SFLOAT;
-        attribute_descriptions[0].offset   = offsetof(VulkanMeshVertexPostition, position);
+        attribute_descriptions[0].offset   = offsetof(VulkanMeshVertexPosition, position);
 
         // varying blending
         attribute_descriptions[1].binding  = 1;

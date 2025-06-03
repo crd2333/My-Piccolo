@@ -361,7 +361,7 @@ void PointLightShadowPass::setupDescriptorSet() {
     RHIDescriptorSetAllocateInfo mesh_point_light_shadow_global_descriptor_set_alloc_info;
     mesh_point_light_shadow_global_descriptor_set_alloc_info.sType = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     mesh_point_light_shadow_global_descriptor_set_alloc_info.pNext = NULL;
-    mesh_point_light_shadow_global_descriptor_set_alloc_info.descriptorPool     = m_rhi->getDescriptorPoor();
+    mesh_point_light_shadow_global_descriptor_set_alloc_info.descriptorPool     = m_rhi->getDescriptorPool();
     mesh_point_light_shadow_global_descriptor_set_alloc_info.descriptorSetCount = 1;
     mesh_point_light_shadow_global_descriptor_set_alloc_info.pSetLayouts        = &m_descriptor_infos[0].layout;
 
@@ -454,7 +454,7 @@ void PointLightShadowPass::drawModel() {
     std::map<VulkanPBRMaterial*, std::map<VulkanMesh*, std::vector<MeshNode>>> point_lights_mesh_drawcall_batch;
 
     // reorganize mesh
-    for (RenderMeshNode &node : * (m_visiable_nodes.p_point_lights_visible_mesh_nodes)) {
+    for (RenderMeshNode &node : * (m_visible_nodes.p_point_lights_visible_mesh_nodes)) {
         auto &mesh_instanced = point_lights_mesh_drawcall_batch[node.ref_material];
         auto &mesh_nodes     = mesh_instanced[node.ref_mesh];
 

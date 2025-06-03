@@ -39,7 +39,7 @@ enum {
     _main_camera_subpass_count
 };
 
-struct VisiableNodes {
+struct VisibleNodes {
     std::vector<RenderMeshNode>*              p_directional_light_visible_mesh_nodes {nullptr};
     std::vector<RenderMeshNode>*              p_point_lights_visible_mesh_nodes {nullptr};
     std::vector<RenderMeshNode>*              p_main_camera_visible_mesh_nodes {nullptr};
@@ -89,7 +89,7 @@ public:
     virtual std::vector<RHIImageView*>           getFramebufferImageViews() const;
     virtual std::vector<RHIDescriptorSetLayout*> getDescriptorSetLayouts() const;
 
-    static VisiableNodes m_visiable_nodes;
+    static VisibleNodes m_visible_nodes;
 
 private:
 };

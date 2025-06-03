@@ -166,7 +166,7 @@ RenderEntity* EditorSceneManager::getAxisMeshByType(EditorAxisMode axis_mode) {
         axis_mesh = &m_rotation_axis;
         break;
     case EditorAxisMode::ScaleMode:
-        axis_mesh = &m_scale_aixs;
+        axis_mesh = &m_scale_axis;
         break;
     default:
         break;
@@ -345,7 +345,7 @@ void EditorSceneManager::moveEntity(float     new_mouse_pos_x,
 
         m_translation_axis.m_model_matrix = axis_model_matrix;
         m_rotation_axis.m_model_matrix    = axis_model_matrix;
-        m_scale_aixs.m_model_matrix       = axis_model_matrix;
+        m_scale_axis.m_model_matrix       = axis_model_matrix;
 
         g_editor_global_context.m_render_system->setVisibleAxis(m_translation_axis);
 
@@ -398,7 +398,7 @@ void EditorSceneManager::moveEntity(float     new_mouse_pos_x,
         transform_component->setPosition(new_translation);
         transform_component->setRotation(new_rotation);
         transform_component->setScale(new_scale);
-        m_scale_aixs.m_model_matrix = new_model_matrix;
+        m_scale_axis.m_model_matrix = new_model_matrix;
     } else if (m_axis_mode == EditorAxisMode::ScaleMode) { // scale
         Vector3 delta_scale_vector = {0, 0, 0};
         Vector3 new_model_scale    = {0, 0, 0};
@@ -458,13 +458,13 @@ void EditorSceneManager::uploadAxisResource() {
         GameObjectPartId axis_instance_id = {0xFFCC, 0xFFCC};
         MeshSourceDesc   mesh_source_desc = {"%%scale_axis%%"};
 
-        m_scale_aixs.m_instance_id   = instance_id_allocator.allocGuid(axis_instance_id);
-        m_scale_aixs.m_mesh_asset_id = mesh_asset_id_allocator.allocGuid(mesh_source_desc);
+        m_scale_axis.m_instance_id   = instance_id_allocator.allocGuid(axis_instance_id);
+        m_scale_axis.m_mesh_asset_id = mesh_asset_id_allocator.allocGuid(mesh_source_desc);
     }
 
     g_editor_global_context.m_render_system->createAxis(
-    {m_translation_axis, m_rotation_axis, m_scale_aixs},
-    {m_translation_axis.m_mesh_data, m_rotation_axis.m_mesh_data, m_scale_aixs.m_mesh_data});
+    {m_translation_axis, m_rotation_axis, m_scale_axis},
+    {m_translation_axis.m_mesh_data, m_rotation_axis.m_mesh_data, m_scale_axis.m_mesh_data});
 }
 
 size_t EditorSceneManager::getGuidOfPickedMesh(const Vector2 &picked_uv) const {

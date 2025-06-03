@@ -42,7 +42,7 @@ public:
     std::shared_ptr<TextureData> loadTexture(std::string file, bool is_srgb = false);
     RenderMeshData               loadMeshData(const MeshSourceDesc &source, AxisAlignedBox &bounding_box);
     RenderMaterialData           loadMaterialData(const MaterialSourceDesc &source);
-    AxisAlignedBox               getCachedBoudingBox(const MeshSourceDesc &source) const;
+    AxisAlignedBox               getCachedBoundingBox(const MeshSourceDesc &source) const;
 
 private:
     StaticMeshData loadStaticMesh(std::string mesh_file, AxisAlignedBox &bounding_box);

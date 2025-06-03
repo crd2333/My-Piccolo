@@ -3101,10 +3101,10 @@ RHICommandBuffer* VulkanRHI::getCurrentCommandBuffer() const {
 RHICommandBuffer* const* VulkanRHI::getCommandBufferList() const {
     return m_command_buffers;
 }
-RHICommandPool* VulkanRHI::getCommandPoor() const {
+RHICommandPool* VulkanRHI::getCommandPool() const {
     return m_rhi_command_pool;
 }
-RHIDescriptorPool* VulkanRHI::getDescriptorPoor() const {
+RHIDescriptorPool* VulkanRHI::getDescriptorPool() const {
     return m_descriptor_pool;
 }
 RHIFence* const* VulkanRHI::getFenceList() const {

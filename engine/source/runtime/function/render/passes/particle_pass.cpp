@@ -399,7 +399,7 @@ void ParticlePass::setupParticleDescriptorSet() {
         RHIDescriptorSetAllocateInfo particlebillboard_global_descriptor_set_alloc_info;
         particlebillboard_global_descriptor_set_alloc_info.sType = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         particlebillboard_global_descriptor_set_alloc_info.pNext = NULL;
-        particlebillboard_global_descriptor_set_alloc_info.descriptorPool     = m_rhi->getDescriptorPoor();
+        particlebillboard_global_descriptor_set_alloc_info.descriptorPool     = m_rhi->getDescriptorPool();
         particlebillboard_global_descriptor_set_alloc_info.descriptorSetCount = 1;
         particlebillboard_global_descriptor_set_alloc_info.pSetLayouts        = &m_descriptor_infos[2].layout;
 
@@ -577,7 +577,7 @@ void ParticlePass::createEmitter(int id, const ParticleEmitterDesc &desc) {
         // Copy to staging buffer
         RHICommandBufferAllocateInfo cmdBufAllocateInfo {};
         cmdBufAllocateInfo.sType              = RHI_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        cmdBufAllocateInfo.commandPool        = m_rhi->getCommandPoor();
+        cmdBufAllocateInfo.commandPool        = m_rhi->getCommandPool();
         cmdBufAllocateInfo.level              = RHI_COMMAND_BUFFER_LEVEL_PRIMARY;
         cmdBufAllocateInfo.commandBufferCount = 1;
         RHICommandBuffer* copyCmd;
@@ -620,10 +620,10 @@ void ParticlePass::createEmitter(int id, const ParticleEmitterDesc &desc) {
             throw std::runtime_error("wait fence submit");
 
         m_rhi->destroyFence(fence);
-        m_rhi->freeCommandBuffers(m_rhi->getCommandPoor(), 1, copyCmd);
+        m_rhi->freeCommandBuffers(m_rhi->getCommandPool(), 1, copyCmd);
     }
 
-    const VkDeviceSize staggingBuferSize        = s_max_particles * sizeof(Particle);
+    const VkDeviceSize staggingBufferSize        = s_max_particles * sizeof(Particle);
     m_emitter_buffer_batches[id].m_emitter_desc = desc;
 
     // fill in data
@@ -649,7 +649,7 @@ void ParticlePass::createEmitter(int id, const ParticleEmitterDesc &desc) {
                                          RHI_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
                                          m_emitter_buffer_batches[id].m_position_host_buffer,
                                          m_emitter_buffer_batches[id].m_position_host_memory,
-                                         staggingBuferSize);
+                                         staggingBufferSize);
 
         // Flush writes to host visible buffer
         void* mapped;
@@ -665,19 +665,19 @@ void ParticlePass::createEmitter(int id, const ParticleEmitterDesc &desc) {
                                          RHI_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                          m_emitter_buffer_batches[id].m_position_device_buffer,
                                          m_emitter_buffer_batches[id].m_position_device_memory,
-                                         staggingBuferSize);
+                                         staggingBufferSize);
 
         m_rhi->createBufferAndInitialize(RHI_BUFFER_USAGE_STORAGE_BUFFER_BIT | RHI_BUFFER_USAGE_TRANSFER_SRC_BIT |
                                          RHI_BUFFER_USAGE_TRANSFER_DST_BIT,
                                          RHI_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                          m_emitter_buffer_batches[id].m_position_render_buffer,
                                          m_emitter_buffer_batches[id].m_position_render_memory,
-                                         staggingBuferSize);
+                                         staggingBufferSize);
 
         // Copy to staging buffer
         RHICommandBufferAllocateInfo cmdBufAllocateInfo {};
         cmdBufAllocateInfo.sType              = RHI_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        cmdBufAllocateInfo.commandPool        = m_rhi->getCommandPoor();
+        cmdBufAllocateInfo.commandPool        = m_rhi->getCommandPool();
         cmdBufAllocateInfo.level              = RHI_COMMAND_BUFFER_LEVEL_PRIMARY;
         cmdBufAllocateInfo.commandBufferCount = 1;
         RHICommandBuffer* copyCmd;
@@ -691,7 +691,7 @@ void ParticlePass::createEmitter(int id, const ParticleEmitterDesc &desc) {
         RHIBufferCopy copyRegion = {};
         copyRegion.srcOffset     = 0;
         copyRegion.dstOffset     = 0;
-        copyRegion.size          = staggingBuferSize;
+        copyRegion.size          = staggingBufferSize;
         m_rhi->cmdCopyBuffer(copyCmd,
                              m_emitter_buffer_batches[id].m_position_host_buffer,
                              m_emitter_buffer_batches[id].m_position_device_buffer,
@@ -719,7 +719,7 @@ void ParticlePass::createEmitter(int id, const ParticleEmitterDesc &desc) {
             throw std::runtime_error("wait fence submit");
 
         m_rhi->destroyFence(fence);
-        m_rhi->freeCommandBuffers(m_rhi->getCommandPoor(), 1, copyCmd);
+        m_rhi->freeCommandBuffers(m_rhi->getCommandPool(), 1, copyCmd);
     }
 }
 
@@ -737,7 +737,7 @@ void ParticlePass::setupParticlePass() {
 
     RHICommandBufferAllocateInfo cmdBufAllocateInfo {};
     cmdBufAllocateInfo.sType              = RHI_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    cmdBufAllocateInfo.commandPool        = m_rhi->getCommandPoor();
+    cmdBufAllocateInfo.commandPool        = m_rhi->getCommandPool();
     cmdBufAllocateInfo.level              = RHI_COMMAND_BUFFER_LEVEL_PRIMARY;
     cmdBufAllocateInfo.commandBufferCount = 1;
     if (RHI_SUCCESS != m_rhi->allocateCommandBuffers(&cmdBufAllocateInfo, m_compute_command_buffer))
@@ -766,11 +766,11 @@ void ParticlePass::setupDescriptorSetLayout() {
     {
         RHIDescriptorSetLayoutBinding particle_layout_bindings[11] = {};
         {
-            RHIDescriptorSetLayoutBinding &uniform_layout_bingding = particle_layout_bindings[0];
-            uniform_layout_bingding.binding                        = 0;
-            uniform_layout_bingding.descriptorType                 = RHI_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            uniform_layout_bingding.descriptorCount                = 1;
-            uniform_layout_bingding.stageFlags                     = RHI_SHADER_STAGE_COMPUTE_BIT;
+            RHIDescriptorSetLayoutBinding &uniform_layout_binding = particle_layout_bindings[0];
+            uniform_layout_binding.binding                        = 0;
+            uniform_layout_binding.descriptorType                 = RHI_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            uniform_layout_binding.descriptorCount                = 1;
+            uniform_layout_binding.stageFlags                     = RHI_SHADER_STAGE_COMPUTE_BIT;
         }
 
         {
@@ -1162,7 +1162,7 @@ void ParticlePass::setupPipelines() {
 void ParticlePass::allocateDescriptorSet() {
     RHIDescriptorSetAllocateInfo particle_descriptor_set_alloc_info;
     particle_descriptor_set_alloc_info.sType          = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    particle_descriptor_set_alloc_info.descriptorPool = m_rhi->getDescriptorPoor();
+    particle_descriptor_set_alloc_info.descriptorPool = m_rhi->getDescriptorPool();
 
     m_descriptor_infos.resize(3 * m_emitter_count);
     for (int eid = 0; eid < m_emitter_count; ++eid) {

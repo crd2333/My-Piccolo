@@ -221,7 +221,7 @@ void RenderSystem::processSwapData() {
         m_render_resource->uploadGlobalRenderResource(m_rhi, *swap_data.m_level_resource_desc);
 
         // reset level resource swap data to a clean state
-        m_swap_context.resetLevelRsourceSwapData();
+        m_swap_context.resetLevelResourceSwapData();
     }
 
     // update game object if needed
@@ -250,7 +250,7 @@ void RenderSystem::processSwapData() {
                 if (!is_mesh_loaded)
                     mesh_data = m_render_resource->loadMeshData(mesh_source, render_entity.m_bounding_box);
                 else
-                    render_entity.m_bounding_box = m_render_resource->getCachedBoudingBox(mesh_source);
+                    render_entity.m_bounding_box = m_render_resource->getCachedBoundingBox(mesh_source);
 
                 render_entity.m_mesh_asset_id = m_render_scene->getMeshAssetIdAllocator().allocGuid(mesh_source);
                 render_entity.m_enable_vertex_blending =
@@ -281,14 +281,14 @@ void RenderSystem::processSwapData() {
                         ""
                     };
                 }
-                bool is_material_loaded = m_render_scene->getMaterialAssetdAllocator().hasElement(material_source);
+                bool is_material_loaded = m_render_scene->getMaterialAssetAllocator().hasElement(material_source);
 
                 RenderMaterialData material_data;
                 if (!is_material_loaded)
                     material_data = m_render_resource->loadMaterialData(material_source);
 
                 render_entity.m_material_asset_id =
-                    m_render_scene->getMaterialAssetdAllocator().allocGuid(material_source);
+                    m_render_scene->getMaterialAssetAllocator().allocGuid(material_source);
 
                 // create game object on the graphics api side
                 if (!is_mesh_loaded)
@@ -356,7 +356,7 @@ void RenderSystem::processSwapData() {
 
         particle_pass->initializeEmitters();
 
-        m_swap_context.resetPartilceBatchSwapData();
+        m_swap_context.resetParticleBatchSwapData();
     }
     if (swap_data.m_emitter_tick_request.has_value()) {
         std::static_pointer_cast<ParticlePass>(m_render_pipeline->m_particle_pass)

@@ -309,7 +309,7 @@ void PickPass::setupDescriptorSet() {
     RHIDescriptorSetAllocateInfo mesh_inefficient_pick_global_descriptor_set_alloc_info;
     mesh_inefficient_pick_global_descriptor_set_alloc_info.sType = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     mesh_inefficient_pick_global_descriptor_set_alloc_info.pNext = NULL;
-    mesh_inefficient_pick_global_descriptor_set_alloc_info.descriptorPool     = m_rhi->getDescriptorPoor();
+    mesh_inefficient_pick_global_descriptor_set_alloc_info.descriptorPool     = m_rhi->getDescriptorPool();
     mesh_inefficient_pick_global_descriptor_set_alloc_info.descriptorSetCount = 1;
     mesh_inefficient_pick_global_descriptor_set_alloc_info.pSetLayouts        = &m_descriptor_infos[0].layout;
 
@@ -409,7 +409,7 @@ uint32_t PickPass::pick(const Vector2 &picked_uv) {
     std::map<VulkanPBRMaterial*, std::map<VulkanMesh*, std::vector<MeshNode>>> main_camera_mesh_drawcall_batch;
 
     // reorganize mesh
-    for (RenderMeshNode &node : * (m_visiable_nodes.p_main_camera_visible_mesh_nodes)) {
+    for (RenderMeshNode &node : * (m_visible_nodes.p_main_camera_visible_mesh_nodes)) {
         auto &mesh_instanced = main_camera_mesh_drawcall_batch[node.ref_material];
         auto &model_nodes    = mesh_instanced[node.ref_mesh];
 

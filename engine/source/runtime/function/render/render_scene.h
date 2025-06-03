@@ -46,7 +46,7 @@ public:
 
     GuidAllocator<GameObjectPartId>   &getInstanceIdAllocator();
     GuidAllocator<MeshSourceDesc>     &getMeshAssetIdAllocator();
-    GuidAllocator<MaterialSourceDesc> &getMaterialAssetdAllocator();
+    GuidAllocator<MaterialSourceDesc> &getMaterialAssetAllocator();
 
     void      addInstanceIdToMap(uint32_t instance_id, GObjectID go_id);
     GObjectID getGObjectIDByMeshID(uint32_t mesh_id) const;

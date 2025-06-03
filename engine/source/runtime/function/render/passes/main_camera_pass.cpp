@@ -24,7 +24,7 @@ void MainCameraPass::initialize(const RenderPassInitInfo* init_info) {
     RenderPass::initialize(nullptr);
 
     const MainCameraPassInitInfo* _init_info = static_cast<const MainCameraPassInitInfo*>(init_info);
-    m_enable_fxaa                            = _init_info->enble_fxaa;
+    m_enable_fxaa                            = _init_info->enable_fxaa;
 
     setupAttachments();
     setupRenderPass();
@@ -1480,7 +1480,7 @@ void MainCameraPass::setupModelGlobalDescriptorSet() {
     RHIDescriptorSetAllocateInfo mesh_global_descriptor_set_alloc_info;
     mesh_global_descriptor_set_alloc_info.sType              = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     mesh_global_descriptor_set_alloc_info.pNext              = NULL;
-    mesh_global_descriptor_set_alloc_info.descriptorPool     = m_rhi->getDescriptorPoor();
+    mesh_global_descriptor_set_alloc_info.descriptorPool     = m_rhi->getDescriptorPool();
     mesh_global_descriptor_set_alloc_info.descriptorSetCount = 1;
     mesh_global_descriptor_set_alloc_info.pSetLayouts        = &m_descriptor_infos[_mesh_global].layout;
 
@@ -1605,7 +1605,7 @@ void MainCameraPass::setupSkyboxDescriptorSet() {
     RHIDescriptorSetAllocateInfo skybox_descriptor_set_alloc_info;
     skybox_descriptor_set_alloc_info.sType              = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     skybox_descriptor_set_alloc_info.pNext              = NULL;
-    skybox_descriptor_set_alloc_info.descriptorPool     = m_rhi->getDescriptorPoor();
+    skybox_descriptor_set_alloc_info.descriptorPool     = m_rhi->getDescriptorPool();
     skybox_descriptor_set_alloc_info.descriptorSetCount = 1;
     skybox_descriptor_set_alloc_info.pSetLayouts        = &m_descriptor_infos[_skybox].layout;
 
@@ -1651,7 +1651,7 @@ void MainCameraPass::setupAxisDescriptorSet() {
     RHIDescriptorSetAllocateInfo axis_descriptor_set_alloc_info;
     axis_descriptor_set_alloc_info.sType              = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     axis_descriptor_set_alloc_info.pNext              = NULL;
-    axis_descriptor_set_alloc_info.descriptorPool     = m_rhi->getDescriptorPoor();
+    axis_descriptor_set_alloc_info.descriptorPool     = m_rhi->getDescriptorPool();
     axis_descriptor_set_alloc_info.descriptorSetCount = 1;
     axis_descriptor_set_alloc_info.pSetLayouts        = &m_descriptor_infos[_axis].layout;
 
@@ -1700,7 +1700,7 @@ void MainCameraPass::setupGbufferLightingDescriptorSet() {
     RHIDescriptorSetAllocateInfo gbuffer_light_global_descriptor_set_alloc_info;
     gbuffer_light_global_descriptor_set_alloc_info.sType          = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     gbuffer_light_global_descriptor_set_alloc_info.pNext          = NULL;
-    gbuffer_light_global_descriptor_set_alloc_info.descriptorPool = m_rhi->getDescriptorPoor();
+    gbuffer_light_global_descriptor_set_alloc_info.descriptorPool = m_rhi->getDescriptorPool();
     gbuffer_light_global_descriptor_set_alloc_info.descriptorSetCount = 1;
     gbuffer_light_global_descriptor_set_alloc_info.pSetLayouts = &m_descriptor_infos[_deferred_lighting].layout;
 
@@ -2041,7 +2041,7 @@ void MainCameraPass::drawMeshGbuffer() {
     std::map<VulkanPBRMaterial*, std::map<VulkanMesh*, std::vector<MeshNode>>> main_camera_mesh_drawcall_batch;
 
     // reorganize mesh
-    for (RenderMeshNode &node : * (m_visiable_nodes.p_main_camera_visible_mesh_nodes)) {
+    for (RenderMeshNode &node : * (m_visible_nodes.p_main_camera_visible_mesh_nodes)) {
         auto &mesh_instanced = main_camera_mesh_drawcall_batch[node.ref_material];
         auto &mesh_nodes     = mesh_instanced[node.ref_mesh];
 
@@ -2298,7 +2298,7 @@ void MainCameraPass::drawMeshLighting() {
     std::map<VulkanPBRMaterial*, std::map<VulkanMesh*, std::vector<MeshNode>>> main_camera_mesh_drawcall_batch;
 
     // reorganize mesh
-    for (RenderMeshNode &node : * (m_visiable_nodes.p_main_camera_visible_mesh_nodes)) {
+    for (RenderMeshNode &node : * (m_visible_nodes.p_main_camera_visible_mesh_nodes)) {
         auto &mesh_instanced = main_camera_mesh_drawcall_batch[node.ref_material];
         auto &mesh_nodes     = mesh_instanced[node.ref_mesh];
 
@@ -2580,11 +2580,11 @@ void MainCameraPass::drawAxis() {
                                     &perframe_dynamic_offset);
 
     m_axis_storage_buffer_object.selected_axis = m_selected_axis;
-    m_axis_storage_buffer_object.model_matrix  = m_visiable_nodes.p_axis_node->model_matrix;
+    m_axis_storage_buffer_object.model_matrix  = m_visible_nodes.p_axis_node->model_matrix;
 
-    RHIBuffer*     vertex_buffers[3] = {m_visiable_nodes.p_axis_node->ref_mesh->mesh_vertex_position_buffer,
-                                        m_visiable_nodes.p_axis_node->ref_mesh->mesh_vertex_varying_enable_blending_buffer,
-                                        m_visiable_nodes.p_axis_node->ref_mesh->mesh_vertex_varying_buffer
+    RHIBuffer*     vertex_buffers[3] = {m_visible_nodes.p_axis_node->ref_mesh->mesh_vertex_position_buffer,
+                                        m_visible_nodes.p_axis_node->ref_mesh->mesh_vertex_varying_enable_blending_buffer,
+                                        m_visible_nodes.p_axis_node->ref_mesh->mesh_vertex_varying_buffer
                                        };
     RHIDeviceSize offsets[3]        = {0, 0, 0};
     m_rhi->cmdBindVertexBuffersPFN(m_rhi->getCurrentCommandBuffer(),
@@ -2593,7 +2593,7 @@ void MainCameraPass::drawAxis() {
                                    vertex_buffers,
                                    offsets);
     m_rhi->cmdBindIndexBufferPFN(m_rhi->getCurrentCommandBuffer(),
-                                 m_visiable_nodes.p_axis_node->ref_mesh->mesh_index_buffer,
+                                 m_visible_nodes.p_axis_node->ref_mesh->mesh_index_buffer,
                                  0,
                                  RHI_INDEX_TYPE_UINT16);
     (*reinterpret_cast<AxisStorageBufferObject*>(reinterpret_cast<uintptr_t>(
@@ -2601,7 +2601,7 @@ void MainCameraPass::drawAxis() {
                 m_axis_storage_buffer_object;
 
     m_rhi->cmdDrawIndexedPFN(m_rhi->getCurrentCommandBuffer(),
-                             m_visiable_nodes.p_axis_node->ref_mesh->mesh_index_count,
+                             m_visible_nodes.p_axis_node->ref_mesh->mesh_index_count,
                              1,
                              0,
                              0,
