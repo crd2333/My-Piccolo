@@ -31,21 +31,25 @@
 
 namespace Piccolo {
 std::vector<std::pair<std::string, bool>> g_editor_node_state_array;
-int                                       g_node_depth = -1;
-void                                      DrawVecControl(const std::string &label,
-    Piccolo::Vector3    &values,
-    float              resetValue  = 0.0f,
-    float              columnWidth = 100.0f);
-void                                      DrawVecControl(const std::string &label,
+int g_node_depth = -1;
+bool DrawVecControl(
+    const std::string &label,
+    Piccolo::Vector3 &values,
+    float resetValue = 0.0f,
+    float columnWidth = 100.0f
+);
+bool DrawVecControl(
+    const std::string &label,
     Piccolo::Quaternion &values,
-    float              resetValue  = 0.0f,
-    float              columnWidth = 100.0f);
+    float resetValue = 0.0f,
+    float columnWidth = 100.0f
+);
 
 EditorUI::EditorUI() {
     const auto &asset_folder            = g_runtime_global_context.m_config_manager->getAssetFolder();
-    m_editor_ui_creator["TreeNodePush"] = [this](const std::string & name, void* value_ptr) -> void {
-        static ImGuiTableFlags flags      = ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings;
-        bool                   node_state = false;
+    m_editor_ui_creator["TreeNodePush"] = [this](const std::string & name, void* value_ptr, const std::function<void()>& /* on_changed */) -> void {
+        static ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings;
+        bool node_state = false;
         g_node_depth++;
         if (g_node_depth > 0) {
             if (g_editor_node_state_array[g_node_depth - 1].second)
@@ -58,14 +62,15 @@ EditorUI::EditorUI() {
             node_state = ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_SpanFullWidth);
         g_editor_node_state_array.emplace_back(std::pair(name.c_str(), node_state));
     };
-    m_editor_ui_creator["TreeNodePop"] = [this](const std::string & name, void* value_ptr) -> void {
+    m_editor_ui_creator["TreeNodePop"] = [this](const std::string & name, void* value_ptr, const std::function<void()>& /* on_changed */) -> void {
         if (g_editor_node_state_array[g_node_depth].second)
             ImGui::TreePop();
         g_editor_node_state_array.pop_back();
         g_node_depth--;
     };
-    m_editor_ui_creator["Transform"] = [this](const std::string & name, void* value_ptr) -> void {
+    m_editor_ui_creator["Transform"] = [this](const std::string & name, void* value_ptr, const std::function<void()>& on_changed) -> void {
         if (g_editor_node_state_array[g_node_depth].second) {
+            bool value_has_changed = false;
             Transform* trans_ptr = static_cast<Transform*>(value_ptr);
 
             Vector3 degrees_val;
@@ -74,9 +79,10 @@ EditorUI::EditorUI() {
             degrees_val.y = trans_ptr->m_rotation.getRoll(false).valueDegrees();
             degrees_val.z = trans_ptr->m_rotation.getYaw(false).valueDegrees();
 
-            DrawVecControl("Position", trans_ptr->m_position);
-            DrawVecControl("Rotation", degrees_val);
-            DrawVecControl("Scale", trans_ptr->m_scale);
+            if (DrawVecControl("Position", trans_ptr->m_position) ||
+                DrawVecControl("Rotation", degrees_val) ||
+                DrawVecControl("Scale", trans_ptr->m_scale))
+                value_has_changed = true;
 
             trans_ptr->m_rotation.w = Math::cos(Math::degreesToRadians(degrees_val.x / 2)) *
                                  Math::cos(Math::degreesToRadians(degrees_val.y / 2)) *
@@ -105,90 +111,118 @@ EditorUI::EditorUI() {
             trans_ptr->m_rotation.normalise();
 
             g_editor_global_context.m_scene_manager->drawSelectedEntityAxis();
+
+            if (on_changed && value_has_changed)
+                on_changed();
         }
     };
-    m_editor_ui_creator["bool"] = [this](const std::string & name, void* value_ptr)  -> void {
+    m_editor_ui_creator["bool"] = [this](const std::string & name, void* value_ptr, const std::function<void()>& on_changed) -> void {
+        bool value_has_changed = false;
         if (g_node_depth == -1) {
             std::string label = "##" + name;
             ImGui::Text("%s", name.c_str());
             ImGui::SameLine();
-            ImGui::Checkbox(label.c_str(), static_cast<bool*>(value_ptr));
+            if (ImGui::Checkbox(label.c_str(), static_cast<bool*>(value_ptr)))
+                value_has_changed = true;
         } else {
             if (g_editor_node_state_array[g_node_depth].second) {
                 std::string full_label = "##" + getLeafUINodeParentLabel() + name;
                 ImGui::Text("%s", name.c_str());
-                ImGui::Checkbox(full_label.c_str(), static_cast<bool*>(value_ptr));
+                if (ImGui::Checkbox(full_label.c_str(), static_cast<bool*>(value_ptr)))
+                    value_has_changed = true;
             }
         }
+        if (on_changed && value_has_changed)
+            on_changed();
     };
-    m_editor_ui_creator["int"] = [this](const std::string & name, void* value_ptr) -> void {
+    m_editor_ui_creator["int"] = [this](const std::string & name, void* value_ptr, const std::function<void()>& on_changed) -> void {
+        bool value_has_changed = false;
         if (g_node_depth == -1) {
             std::string label = "##" + name;
             ImGui::Text("%s", name.c_str());
             ImGui::SameLine();
-            ImGui::InputInt(label.c_str(), static_cast<int*>(value_ptr));
+            if (ImGui::DragInt(label.c_str(), static_cast<int*>(value_ptr)))
+                value_has_changed = true;
         } else {
             if (g_editor_node_state_array[g_node_depth].second) {
                 std::string full_label = "##" + getLeafUINodeParentLabel() + name;
                 ImGui::Text("%s", (name + ":").c_str());
-                ImGui::InputInt(full_label.c_str(), static_cast<int*>(value_ptr));
+                if (ImGui::DragInt(full_label.c_str(), static_cast<int*>(value_ptr)))
+                    value_has_changed = true;
             }
         }
+        if (on_changed && value_has_changed)
+            on_changed();
     };
-    m_editor_ui_creator["float"] = [this](const std::string & name, void* value_ptr) -> void {
+    m_editor_ui_creator["float"] = [this](const std::string & name, void* value_ptr, const std::function<void()>& on_changed) -> void {
+        bool value_has_changed = false;
         if (g_node_depth == -1) {
             std::string label = "##" + name;
             ImGui::Text("%s", name.c_str());
             ImGui::SameLine();
-            ImGui::InputFloat(label.c_str(), static_cast<float*>(value_ptr));
+            if (ImGui::DragFloat(label.c_str(), static_cast<float*>(value_ptr)))
+                value_has_changed = true;
         } else {
             if (g_editor_node_state_array[g_node_depth].second) {
                 std::string full_label = "##" + getLeafUINodeParentLabel() + name;
                 ImGui::Text("%s", (name + ":").c_str());
-                ImGui::InputFloat(full_label.c_str(), static_cast<float*>(value_ptr));
+                if (ImGui::DragFloat(full_label.c_str(), static_cast<float*>(value_ptr)))
+                    value_has_changed = true;
             }
         }
+        if (on_changed && value_has_changed)
+            on_changed();
     };
-    m_editor_ui_creator["Vector3"] = [this](const std::string & name, void* value_ptr) -> void {
+    m_editor_ui_creator["Vector3"] = [this](const std::string & name, void* value_ptr, const std::function<void()>& on_changed) -> void {
         Vector3* vec_ptr = static_cast<Vector3*>(value_ptr);
-        float    val[3]  = {vec_ptr->x, vec_ptr->y, vec_ptr->z};
+        float val[3] = {vec_ptr->x, vec_ptr->y, vec_ptr->z};
+        bool value_has_changed = false;
         if (g_node_depth == -1) {
             std::string label = "##" + name;
             ImGui::Text("%s", name.c_str());
             ImGui::SameLine();
-            ImGui::DragFloat3(label.c_str(), val);
+            if (ImGui::DragFloat3(label.c_str(), val))
+                value_has_changed = true;
         } else {
             if (g_editor_node_state_array[g_node_depth].second) {
                 std::string full_label = "##" + getLeafUINodeParentLabel() + name;
                 ImGui::Text("%s", (name + ":").c_str());
-                ImGui::DragFloat3(full_label.c_str(), val);
+                if (ImGui::DragFloat3(full_label.c_str(), val))
+                    value_has_changed = true;
             }
         }
         vec_ptr->x = val[0];
         vec_ptr->y = val[1];
         vec_ptr->z = val[2];
+        if (on_changed && value_has_changed)
+            on_changed();
     };
-    m_editor_ui_creator["Quaternion"] = [this](const std::string & name, void* value_ptr) -> void {
+    m_editor_ui_creator["Quaternion"] = [this](const std::string & name, void* value_ptr, const std::function<void()>& on_changed) -> void {
         Quaternion* qua_ptr = static_cast<Quaternion*>(value_ptr);
-        float       val[4]  = {qua_ptr->x, qua_ptr->y, qua_ptr->z, qua_ptr->w};
+        float val[4] = {qua_ptr->x, qua_ptr->y, qua_ptr->z, qua_ptr->w};
+        bool value_has_changed = false;
         if (g_node_depth == -1) {
             std::string label = "##" + name;
             ImGui::Text("%s", name.c_str());
             ImGui::SameLine();
-            ImGui::DragFloat4(label.c_str(), val);
+            if (ImGui::DragFloat4(label.c_str(), val))
+                value_has_changed = true;
         } else {
             if (g_editor_node_state_array[g_node_depth].second) {
                 std::string full_label = "##" + getLeafUINodeParentLabel() + name;
                 ImGui::Text("%s", (name + ":").c_str());
-                ImGui::DragFloat4(full_label.c_str(), val);
+                if (ImGui::DragFloat4(full_label.c_str(), val))
+                    value_has_changed = true;
             }
         }
         qua_ptr->x = val[0];
         qua_ptr->y = val[1];
         qua_ptr->z = val[2];
         qua_ptr->w = val[3];
+        if (on_changed && value_has_changed)
+            on_changed();
     };
-    m_editor_ui_creator["std::string"] = [this, &asset_folder](const std::string & name, void* value_ptr) -> void {
+    m_editor_ui_creator["std::string"] = [this, &asset_folder](const std::string & name, void* value_ptr, const std::function<void()>& /* on_changed */) -> void {
         if (g_node_depth == -1) {
             std::string label = "##" + name;
             ImGui::Text("%s", name.c_str());
@@ -389,50 +423,43 @@ void EditorUI::createLeafNodeUI(Reflection::ReflectionInstance &instance) {
             Reflection::ArrayAccessor array_accessor;
             if (Reflection::TypeMeta::newArrayAccessorFromName(field.getFieldTypeName(), array_accessor)) {
                 void* field_instance = field.get(instance.m_instance);
-                int   array_count    = array_accessor.getSize(field_instance);
-                m_editor_ui_creator["TreeNodePush"](
-                    std::string(field.getFieldName()) + "[" + std::to_string(array_count) + "]", nullptr);
+                int array_count = array_accessor.getSize(field_instance);
+                m_editor_ui_creator["TreeNodePush"](std::string(field.getFieldName()) + "[" + std::to_string(array_count) + "]", nullptr, {});
                 auto item_type_meta_item =
                     Reflection::TypeMeta::newMetaFromName(array_accessor.getElementTypeName());
                 auto item_ui_creator_iterator = m_editor_ui_creator.find(item_type_meta_item.getTypeName());
                 for (int index = 0; index < array_count; index++) {
                     if (item_ui_creator_iterator == m_editor_ui_creator.end()) {
-                        m_editor_ui_creator["TreeNodePush"]("[" + std::to_string(index) + "]", nullptr);
+                        m_editor_ui_creator["TreeNodePush"]("[" + std::to_string(index) + "]", nullptr, {});
                         auto object_instance = Reflection::ReflectionInstance(
                                                    Piccolo::Reflection::TypeMeta::newMetaFromName(item_type_meta_item.getTypeName().c_str()),
                                                    array_accessor.get(index, field_instance));
                         createClassUI(object_instance);
-                        m_editor_ui_creator["TreeNodePop"]("[" + std::to_string(index) + "]", nullptr);
+                        m_editor_ui_creator["TreeNodePop"]("[" + std::to_string(index) + "]", nullptr, {});
                     } else {
                         if (item_ui_creator_iterator == m_editor_ui_creator.end())
                             continue;
-                        m_editor_ui_creator[item_type_meta_item.getTypeName()](
-                            "[" + std::to_string(index) + "]", array_accessor.get(index, field_instance));
+                        m_editor_ui_creator[item_type_meta_item.getTypeName()]("[" + std::to_string(index) + "]", array_accessor.get(index, field_instance), {});
                     }
                 }
-                m_editor_ui_creator["TreeNodePop"](field.getFieldName(), nullptr);
+                m_editor_ui_creator["TreeNodePop"](field.getFieldName(), nullptr, {});
             }
         }
         auto ui_creator_iterator = m_editor_ui_creator.find(field.getFieldTypeName());
         if (ui_creator_iterator == m_editor_ui_creator.end()) {
-            Reflection::TypeMeta field_meta =
-                Reflection::TypeMeta::newMetaFromName(field.getFieldTypeName());
+            Reflection::TypeMeta field_meta = Reflection::TypeMeta::newMetaFromName(field.getFieldTypeName());
             if (field.getTypeMeta(field_meta)) {
-                auto child_instance =
-                    Reflection::ReflectionInstance(field_meta, field.get(instance.m_instance));
-                m_editor_ui_creator["TreeNodePush"](field_meta.getTypeName(), nullptr);
+                auto child_instance = Reflection::ReflectionInstance(field_meta, field.get(instance.m_instance));
+                m_editor_ui_creator["TreeNodePush"](field_meta.getTypeName(), nullptr, {});
                 createClassUI(child_instance);
-                m_editor_ui_creator["TreeNodePop"](field_meta.getTypeName(), nullptr);
+                m_editor_ui_creator["TreeNodePop"](field_meta.getTypeName(), nullptr, {});
             } else {
                 if (ui_creator_iterator == m_editor_ui_creator.end())
                     continue;
-                m_editor_ui_creator[field.getFieldTypeName()](field.getFieldName(),
-                    field.get(instance.m_instance));
+                m_editor_ui_creator[field.getFieldTypeName()](field.getFieldName(), field.get(instance.m_instance), {});
             }
-        } else {
-            m_editor_ui_creator[field.getFieldTypeName()](field.getFieldName(),
-                field.get(instance.m_instance));
-        }
+        } else
+            m_editor_ui_creator[field.getFieldTypeName()](field.getFieldName(), field.get(instance.m_instance), {});
     }
 }
 
@@ -464,29 +491,18 @@ void EditorUI::showEditorDetailWindow(bool* p_open) {
     ImGui::SameLine();
     ImGui::InputText("##Name", cname, IM_ARRAYSIZE(cname), ImGuiInputTextFlags_ReadOnly);
 
-    // active state
-    // bool is_active = selected_object->isActive();
-    // if (is_active) {
-    //     if (ImGui::Button("Active"))
-    //         selected_object->setActive(!is_active);
-    // } else {
-    //     if (ImGui::Button("Deactive"))
-    //         selected_object->setActive(!is_active);
-    // }
-    bool is_active = selected_object->isActive();
-    if (ImGui::Checkbox("Active", &is_active)) {
-        selected_object->setActive(is_active);
-    }
+    bool* active_ptr = selected_object->getActivePtr();
+    m_editor_ui_creator["bool"]("Active", active_ptr, [selected_object, active_ptr](){selected_object->setActive(*active_ptr);});
 
-    static ImGuiTableFlags flags                      = ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings;
-    auto&&                 selected_object_components = selected_object->getComponents();
+    static ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings;
+    auto&& selected_object_components = selected_object->getComponents();
     for (auto component_ptr : selected_object_components) {
-        m_editor_ui_creator["TreeNodePush"](("<" + component_ptr.getTypeName() + ">").c_str(), nullptr);
+        m_editor_ui_creator["TreeNodePush"](("<" + component_ptr.getTypeName() + ">").c_str(), nullptr, {});
         auto object_instance = Reflection::ReflectionInstance(
                                    Piccolo::Reflection::TypeMeta::newMetaFromName(component_ptr.getTypeName().c_str()),
                                    component_ptr.operator->());
         createClassUI(object_instance);
-        m_editor_ui_creator["TreeNodePop"](("<" + component_ptr.getTypeName() + ">").c_str(), nullptr);
+        m_editor_ui_creator["TreeNodePop"](("<" + component_ptr.getTypeName() + ">").c_str(), nullptr, {});
     }
     ImGui::End();
 }
@@ -862,7 +878,7 @@ void EditorUI::setUIColorStyle() {
 
 void EditorUI::preRender() { showEditorUI(); }
 
-void DrawVecControl(const std::string &label, Piccolo::Vector3 &values, float resetValue, float columnWidth) {
+bool DrawVecControl(const std::string &label, Piccolo::Vector3 &values, float resetValue, float columnWidth) {
     ImGui::PushID(label.c_str());
 
     ImGui::Columns(2);
@@ -917,7 +933,7 @@ void DrawVecControl(const std::string &label, Piccolo::Vector3 &values, float re
     ImGui::PopID();
 }
 
-void DrawVecControl(const std::string &label, Piccolo::Quaternion &values, float resetValue, float columnWidth) {
+bool DrawVecControl(const std::string &label, Piccolo::Quaternion &values, float resetValue, float columnWidth) {
     ImGui::PushID(label.c_str());
 
     ImGui::Columns(2);
