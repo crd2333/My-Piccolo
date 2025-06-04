@@ -147,6 +147,7 @@ EditorUI::EditorUI() {
             if (g_editor_node_state_array[g_node_depth].second) {
                 std::string full_label = "##" + getLeafUINodeParentLabel() + name;
                 ImGui::Text("%s", (name + ":").c_str());
+                ImGui::SameLine();
                 if (ImGui::DragInt(full_label.c_str(), static_cast<int*>(value_ptr)))
                     value_has_changed = true;
             }
@@ -166,6 +167,7 @@ EditorUI::EditorUI() {
             if (g_editor_node_state_array[g_node_depth].second) {
                 std::string full_label = "##" + getLeafUINodeParentLabel() + name;
                 ImGui::Text("%s", (name + ":").c_str());
+                ImGui::SameLine();
                 if (ImGui::DragFloat(full_label.c_str(), static_cast<float*>(value_ptr)))
                     value_has_changed = true;
             }
@@ -931,6 +933,7 @@ bool DrawVecControl(const std::string &label, Piccolo::Vector3 &values, float re
 
     ImGui::Columns(1);
     ImGui::PopID();
+    return false;
 }
 
 bool DrawVecControl(const std::string &label, Piccolo::Quaternion &values, float resetValue, float columnWidth) {
@@ -998,5 +1001,6 @@ bool DrawVecControl(const std::string &label, Piccolo::Quaternion &values, float
 
     ImGui::Columns(1);
     ImGui::PopID();
+    return false;
 }
 } // namespace Piccolo
