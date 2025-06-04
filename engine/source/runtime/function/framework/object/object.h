@@ -26,8 +26,12 @@ public:
 
     GObjectID getID() const { return m_id; }
 
-    void               setName(std::string name) { m_name = name; }
+    void setName(std::string name) { m_name = name; }
     const std::string &getName() const { return m_name; }
+
+    // active state
+    void setActive(bool active);
+    bool isActive() const { return m_active; }
 
     bool hasComponent(const std::string &compenent_type_name) const;
 
@@ -59,9 +63,14 @@ protected:
     GObjectID   m_id {k_invalid_gobject_id};
     std::string m_name;
     std::string m_definition_url;
+    bool        m_active {true};
 
     // we have to use the ReflectionPtr due to that the components need to be reflected
     // in editor, and it's polymorphism
     std::vector<Reflection::ReflectionPtr<Component>> m_components;
+
+    // active state
+    void onActive();
+    void onDeactive() const;
 };
 } // namespace Piccolo

@@ -348,14 +348,21 @@ void EditorUI::showEditorWorldObjectsWindow(bool* p_open) {
         std::shared_ptr<GObject> object    = id_object_pair.second;
         const std::string        name      = object->getName();
         if (name.size() > 0) {
+            bool is_object_active = object->isActive();
+            if (!is_object_active) // 如果对象未激活
+                ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled]);
+
             if (ImGui::Selectable(name.c_str(),
                                   g_editor_global_context.m_scene_manager->getSelectedObjectID() == object_id)) {
                 if (g_editor_global_context.m_scene_manager->getSelectedObjectID() != object_id)
                     g_editor_global_context.m_scene_manager->onGObjectSelected(object_id);
                 else
                     g_editor_global_context.m_scene_manager->onGObjectSelected(k_invalid_gobject_id);
-                break;
+                // break;
             }
+
+            if (!is_object_active)
+                ImGui::PopStyleColor(); // 恢复之前设置的颜色
         }
     }
     ImGui::End();
@@ -456,6 +463,20 @@ void EditorUI::showEditorDetailWindow(bool* p_open) {
     ImGui::Text("Name");
     ImGui::SameLine();
     ImGui::InputText("##Name", cname, IM_ARRAYSIZE(cname), ImGuiInputTextFlags_ReadOnly);
+
+    // active state
+    // bool is_active = selected_object->isActive();
+    // if (is_active) {
+    //     if (ImGui::Button("Active"))
+    //         selected_object->setActive(!is_active);
+    // } else {
+    //     if (ImGui::Button("Deactive"))
+    //         selected_object->setActive(!is_active);
+    // }
+    bool is_active = selected_object->isActive();
+    if (ImGui::Checkbox("Active", &is_active)) {
+        selected_object->setActive(is_active);
+    }
 
     static ImGuiTableFlags flags                      = ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings;
     auto&&                 selected_object_components = selected_object->getComponents();
@@ -783,7 +804,7 @@ void EditorUI::setUIColorStyle() {
     ImVec4*     colors = style->Colors;
 
     colors[ImGuiCol_Text]                  = ImVec4(0.4745f, 0.4745f, 0.4745f, 1.00f);
-    colors[ImGuiCol_TextDisabled]          = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+    colors[ImGuiCol_TextDisabled]          = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
     colors[ImGuiCol_WindowBg]              = ImVec4(0.0078f, 0.0078f, 0.0078f, 1.00f);
     colors[ImGuiCol_ChildBg]               = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
     colors[ImGuiCol_PopupBg]               = ImVec4(0.08f, 0.08f, 0.08f, 0.94f);
