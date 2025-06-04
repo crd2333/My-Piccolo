@@ -122,7 +122,7 @@ int TypeMeta::getMethodsList(std::vector<MethodAccessor>& out_methods) const { /
     return out_methods.size();
 }
 
-int TypeMeta::getBaseClassReflectionInstanceList(ReflectionInstance* &out_list, void* instance) {
+int TypeMeta::getBaseClassReflectionInstanceList(std::vector<Reflection::ReflectionInstance> &out_list, void* instance) {
     auto iter = m_class_map.find(m_type_name);
 
     if (iter != m_class_map.end())

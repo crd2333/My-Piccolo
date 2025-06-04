@@ -86,7 +86,7 @@ typedef std::function<void(void*)>             InvokeFunction;
 
 typedef std::function<void* (const Json &)>                          ConstructorWithJson;
 typedef std::function<Json(void*)>                                   WriteJsonByName;
-typedef std::function<int(Reflection::ReflectionInstance* &, void*)> GetBaseClassReflectionInstanceListFunc;
+typedef std::function<int(std::vector<Reflection::ReflectionInstance> &, void*)> GetBaseClassReflectionInstanceListFunc;
 
 typedef std::tuple<SetFunction, GetFunction, GetNameFunction, GetNameFunction, GetNameFunction, GetBoolFunc>
 FieldFunctionTuple;
@@ -127,7 +127,7 @@ public:
     int getFieldsList(std::vector<FieldAccessor>& out_fields) const;
     int getMethodsList(std::vector<MethodAccessor>& out_methods) const;
 
-    int getBaseClassReflectionInstanceList(ReflectionInstance* &out_list, void* instance);
+    int getBaseClassReflectionInstanceList(std::vector<Reflection::ReflectionInstance> &out_list, void* instance);
 
     FieldAccessor getFieldByName(const char* name);
     MethodAccessor getMethodByName(const char* name);

@@ -362,14 +362,14 @@ void EditorUI::showEditorWorldObjectsWindow(bool* p_open) {
 }
 
 void EditorUI::createClassUI(Reflection::ReflectionInstance &instance) {
-    Reflection::ReflectionInstance* reflection_instance;
+    std::vector<Reflection::ReflectionInstance> reflection_instance;
     int count = instance.m_meta.getBaseClassReflectionInstanceList(reflection_instance, instance.m_instance);
     for (int index = 0; index < count; index++)
         createClassUI(reflection_instance[index]);
     createLeafNodeUI(instance);
 
     if (count > 0)
-        delete[] reflection_instance;
+        reflection_instance.clear();
 }
 
 void EditorUI::createLeafNodeUI(Reflection::ReflectionInstance &instance) {
