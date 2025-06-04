@@ -35,7 +35,7 @@ void metaExample() {
     Serializer::read(Test1_json, test1_out);
     LOG_INFO(test1_context);
 
-    auto        Test2_json_in = Serializer::write(test2_in);
+    auto Test2_json_in = Serializer::write(test2_in);
     std::string test2_context = Test2_json_in.dump();
 
     std::fstream out_put("out.txt", std::ios::out);
@@ -49,9 +49,9 @@ void metaExample() {
     LOG_INFO(test2_context.c_str());
 
     // reflection
-    auto                       meta = TypeMetaDef(Test2, &test2_out);
+    auto meta = TypeMetaDef(Test2, &test2_out);
     std::vector<Reflection::FieldAccessor> fields;
-    int                        fields_count = meta.m_meta.getFieldsList(fields);
+    int fields_count = meta.m_meta.getFieldsList(fields);
     for (int i = 0; i < fields_count; ++i) {
         auto filed_accesser = fields[i];
         std::cout << filed_accesser.getFieldTypeName() << " " << filed_accesser.getFieldName() << " "

@@ -64,6 +64,7 @@ void LevelDebugger::showCameraInfo(std::shared_ptr<Level> level) const {
     std::shared_ptr<GObject> gobject = level->getCurrentActiveCharacter().lock()->getObject().lock();
     drawCameraInfo(gobject);
 }
+
 void LevelDebugger::drawBones(std::shared_ptr<GObject> object) const {
     const TransformComponent* transform_component =
         object->tryGetComponentConst<TransformComponent>("TransformComponent");

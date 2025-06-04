@@ -30,7 +30,7 @@ public:
 
         // parse to json object and read to runtime res object
         std::string error;
-        auto&& asset_json = Json::parse(asset_json_text, error);
+        auto&& asset_json = Json::parse(asset_json_text, error, JsonParse::COMMENTS);
         if (!error.empty()) {
             LOG_ERROR("parse json file {} failed!", asset_url);
             return false;
@@ -60,6 +60,5 @@ public:
     }
 
     std::filesystem::path getFullPath(const std::string &relative_path) const;
-
 };
 } // namespace Piccolo
