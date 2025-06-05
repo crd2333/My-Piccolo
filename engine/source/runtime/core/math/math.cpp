@@ -52,6 +52,87 @@ Radian Math::acos(float value) {
 
     return Radian(Math_PI);
 }
+
+// 欧拉角转四元数，输入为度
+Quaternion Math::eulerAnglesDegreesToQuaternion(const Vector3 &euler_degrees) {
+    float pitch = degreesToRadians(euler_degrees.x) * 0.5f;
+    float roll  = degreesToRadians(euler_degrees.y) * 0.5f;
+    float yaw   = degreesToRadians(euler_degrees.z) * 0.5f;
+
+    float sinp = std::sin(pitch);
+    float sinr = std::sin(roll);
+    float siny = std::sin(yaw);
+    float cosp = std::cos(pitch);
+    float cosr = std::cos(roll);
+    float cosy = std::cos(yaw);
+
+    Quaternion q;
+    q.w = cosp * cosr * cosy + sinp * sinr * siny;
+    q.x = sinp * cosr * cosy - cosp * sinr * siny;
+    q.y = cosp * sinr * cosy + sinp * cosr * siny;
+    q.z = cosp * cosr * siny - sinp * sinr * cosy;
+    return q;
+}
+
+// 欧拉角转四元数，输入为弧度
+Quaternion Math::eulerAnglesRadiansToQuaternion(const Vector3& euler_radians) {
+    float pitch = euler_radians.x * 0.5f;
+    float roll  = euler_radians.y * 0.5f;
+    float yaw   = euler_radians.z * 0.5f;
+
+    float sinp = std::sin(pitch);
+    float sinr = std::sin(roll);
+    float siny = std::sin(yaw);
+    float cosp = std::cos(pitch);
+    float cosr = std::cos(roll);
+    float cosy = std::cos(yaw);
+
+    Quaternion q;
+    q.w = cosp * cosr * cosy + sinp * sinr * siny;
+    q.x = sinp * cosr * cosy - cosp * sinr * siny;
+    q.y = cosp * sinr * cosy + sinp * cosr * siny;
+    q.z = cosp * cosr * siny - sinp * sinr * cosy;
+    return q;
+}
+
+// 四元数转欧拉角，输出为度
+Vector3 Math::quaternionToEulerAnglesDegrees(const Quaternion &q) {
+    float sinr_cosp = 2.0f * (q.w * q.x + q.y * q.z);
+    float cosr_cosp = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);
+    float roll      = std::atan2(sinr_cosp, cosr_cosp);
+
+    float sinp = 2.0f * (q.w * q.y - q.z * q.x);
+    if (std::fabs(sinp) >= 1.0f)
+        return Vector3(Math_HALF_PI, 0.0f, 0.0f); // 使用 90 度作为俯仰角
+
+    float pitch = std::asin(sinp);
+
+    float siny_cosp = 2.0f * (q.w * q.z + q.x * q.y);
+    float cosy_cosp = 1.0f - 2.0f * (q.y * q.y + q.z * q.z);
+    float yaw       = std::atan2(siny_cosp, cosy_cosp);
+
+    return Vector3(radiansToDegrees(pitch), radiansToDegrees(roll), radiansToDegrees(yaw));
+}
+
+// 四元数转欧拉角，输出为弧度
+Vector3 Math::quaternionToEulerAnglesRadians(const Quaternion &q) {
+    float sinr_cosp = 2.0f * (q.w * q.x + q.y * q.z);
+    float cosr_cosp = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);
+    float roll      = std::atan2(sinr_cosp, cosr_cosp);
+
+    float sinp = 2.0f * (q.w * q.y - q.z * q.x);
+    if (std::fabs(sinp) >= 1.0f)
+        return Vector3(Math_HALF_PI, 0.0f, 0.0f); // 使用 90 度作为俯仰角
+
+    float pitch = std::asin(sinp);
+
+    float siny_cosp = 2.0f * (q.w * q.z + q.x * q.y);
+    float cosy_cosp = 1.0f - 2.0f * (q.y * q.y + q.z * q.z);
+    float yaw       = std::atan2(siny_cosp, cosy_cosp);
+
+    return Vector3(pitch, roll, yaw);
+}
+
 //-----------------------------------------------------------------------
 Radian Math::asin(float value) {
     if (-1.0 < value) {

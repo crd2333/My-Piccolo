@@ -200,6 +200,10 @@ public:
     static float radiansToAngleUnits(float radians);
     static float angleUnitsToDegrees(float units);
     static float degreesToAngleUnits(float degrees);
+    static Quaternion eulerAnglesDegreesToQuaternion(const Vector3& euler_degrees);
+    static Quaternion eulerAnglesRadiansToQuaternion(const Vector3& euler_radians);
+    static Vector3 quaternionToEulerAnglesDegrees(const Quaternion &q);
+    static Vector3 quaternionToEulerAnglesRadians(const Quaternion &q);
 
     static float  sin(const Radian &rad) { return std::sin(rad.valueRadians()); }
     static float  sin(float value) { return std::sin(value); }

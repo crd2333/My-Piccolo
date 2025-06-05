@@ -1,4 +1,4 @@
-#include "editor/include/editor_ui.h"
+﻿#include "editor/include/editor_ui.h"
 
 #include "editor/include/editor_global_context.h"
 #include "editor/include/editor_input_manager.h"
@@ -33,16 +33,34 @@ namespace Piccolo {
 std::vector<std::pair<std::string, bool>> g_editor_node_state_array;
 int g_node_depth = -1;
 bool DrawVecControl(
+    const std::string &name,
+    const std::string &label,
+    Piccolo::Vector2 &values,
+    const Piccolo::Vector2 &resetValue = Piccolo::Vector2(0.0f, 0.0f),
+    float columnWidth = 0.0f // dynamic column width
+);
+template<bool asColor = false>
+bool DrawVecControl(
+    const std::string &name,
     const std::string &label,
     Piccolo::Vector3 &values,
-    float resetValue = 0.0f,
-    float columnWidth = 100.0f
+    const Piccolo::Vector3 &resetValue = Piccolo::Vector3(0.0f, 0.0f, 0.0f),
+    float columnWidth = 0.0f // dynamic column width
+);
+template<bool asColor = false>
+bool DrawVecControl(
+    const std::string &name,
+    const std::string &label,
+    Piccolo::Vector4 &values,
+    const Piccolo::Vector4 &resetValue = Piccolo::Vector4(0.0f, 0.0f, 0.0f, 1.0f),
+    float columnWidth = 0.0f // dynamic column width
 );
 bool DrawVecControl(
+    const std::string &name,
     const std::string &label,
     Piccolo::Quaternion &values,
-    float resetValue = 0.0f,
-    float columnWidth = 100.0f
+    const Piccolo::Quaternion &resetValue = Piccolo::Quaternion(0.0f, 0.0f, 0.0f, 1.0f),
+    float columnWidth = 0.0f // dynamic column width
 );
 
 EditorUI::EditorUI() {
@@ -70,44 +88,20 @@ EditorUI::EditorUI() {
     };
     m_editor_ui_creator["Transform"] = [this](const std::string & name, void* value_ptr, const std::function<void()>& on_changed) -> void {
         if (g_editor_node_state_array[g_node_depth].second) {
+            std::string label = "##" + getLeafUINodeParentLabel() + name;
             bool value_has_changed = false;
             Transform* trans_ptr = static_cast<Transform*>(value_ptr);
 
-            Vector3 degrees_val;
+            Vector3 degrees_val(trans_ptr->m_rotation.getPitch(false).valueDegrees(),
+                                trans_ptr->m_rotation.getRoll(false).valueDegrees(),
+                                trans_ptr->m_rotation.getYaw(false).valueDegrees());
 
-            degrees_val.x = trans_ptr->m_rotation.getPitch(false).valueDegrees();
-            degrees_val.y = trans_ptr->m_rotation.getRoll(false).valueDegrees();
-            degrees_val.z = trans_ptr->m_rotation.getYaw(false).valueDegrees();
-
-            if (DrawVecControl("Position", trans_ptr->m_position) ||
-                DrawVecControl("Rotation", degrees_val) ||
-                DrawVecControl("Scale", trans_ptr->m_scale))
+            if (DrawVecControl("Position:", label + "_Position", trans_ptr->m_position, Vector3(0.0f, 0.0f, 0.0f), 120.0f) ||
+                DrawVecControl("Rotation:", label + "_Rotation", degrees_val, Vector3(0.0f, 0.0f, 0.0f), 120.0f) ||
+                DrawVecControl("Scale:", label + "_Scale", trans_ptr->m_scale, Vector3(1.0f, 1.0f, 1.0f), 120.0f))
                 value_has_changed = true;
 
-            trans_ptr->m_rotation.w = Math::cos(Math::degreesToRadians(degrees_val.x / 2)) *
-                                 Math::cos(Math::degreesToRadians(degrees_val.y / 2)) *
-                                 Math::cos(Math::degreesToRadians(degrees_val.z / 2)) +
-                                 Math::sin(Math::degreesToRadians(degrees_val.x / 2)) *
-                                 Math::sin(Math::degreesToRadians(degrees_val.y / 2)) *
-                                 Math::sin(Math::degreesToRadians(degrees_val.z / 2));
-            trans_ptr->m_rotation.x = Math::sin(Math::degreesToRadians(degrees_val.x / 2)) *
-                                 Math::cos(Math::degreesToRadians(degrees_val.y / 2)) *
-                                 Math::cos(Math::degreesToRadians(degrees_val.z / 2)) -
-                                 Math::cos(Math::degreesToRadians(degrees_val.x / 2)) *
-                                 Math::sin(Math::degreesToRadians(degrees_val.y / 2)) *
-                                 Math::sin(Math::degreesToRadians(degrees_val.z / 2));
-            trans_ptr->m_rotation.y = Math::cos(Math::degreesToRadians(degrees_val.x / 2)) *
-                                 Math::sin(Math::degreesToRadians(degrees_val.y / 2)) *
-                                 Math::cos(Math::degreesToRadians(degrees_val.z / 2)) +
-                                 Math::sin(Math::degreesToRadians(degrees_val.x / 2)) *
-                                 Math::cos(Math::degreesToRadians(degrees_val.y / 2)) *
-                                 Math::sin(Math::degreesToRadians(degrees_val.z / 2));
-            trans_ptr->m_rotation.z = Math::cos(Math::degreesToRadians(degrees_val.x / 2)) *
-                                 Math::cos(Math::degreesToRadians(degrees_val.y / 2)) *
-                                 Math::sin(Math::degreesToRadians(degrees_val.z / 2)) -
-                                 Math::sin(Math::degreesToRadians(degrees_val.x / 2)) *
-                                 Math::sin(Math::degreesToRadians(degrees_val.y / 2)) *
-                                 Math::cos(Math::degreesToRadians(degrees_val.z / 2));
+            trans_ptr->m_rotation = Piccolo::Math::eulerAnglesDegreesToQuaternion(degrees_val);
             trans_ptr->m_rotation.normalise();
 
             g_editor_global_context.m_scene_manager->drawSelectedEntityAxis();
@@ -118,134 +112,203 @@ EditorUI::EditorUI() {
     };
     m_editor_ui_creator["bool"] = [this](const std::string & name, void* value_ptr, const std::function<void()>& on_changed) -> void {
         bool value_has_changed = false;
+        std::string label = "##" + (g_node_depth == -1 ? "" : getLeafUINodeParentLabel()) + name;
         if (g_node_depth == -1) {
-            std::string label = "##" + name;
+            ImGui::Columns(2);
             ImGui::Text("%s", name.c_str());
-            ImGui::SameLine();
+            ImGui::NextColumn();
             if (ImGui::Checkbox(label.c_str(), static_cast<bool*>(value_ptr)))
                 value_has_changed = true;
-        } else {
-            if (g_editor_node_state_array[g_node_depth].second) {
-                std::string full_label = "##" + getLeafUINodeParentLabel() + name;
-                ImGui::Text("%s", name.c_str());
-                if (ImGui::Checkbox(full_label.c_str(), static_cast<bool*>(value_ptr)))
-                    value_has_changed = true;
-            }
+            ImGui::Columns(1);
+        } else if (g_editor_node_state_array[g_node_depth].second) {
+            ImGui::Columns(2);
+            ImGui::Text("%s", name.c_str());
+            ImGui::NextColumn();
+            if (ImGui::Checkbox(label.c_str(), static_cast<bool*>(value_ptr)))
+                value_has_changed = true;
+            ImGui::Columns(1);
         }
         if (on_changed && value_has_changed)
             on_changed();
     };
     m_editor_ui_creator["int"] = [this](const std::string & name, void* value_ptr, const std::function<void()>& on_changed) -> void {
         bool value_has_changed = false;
+        std::string label = "##" + (g_node_depth == -1 ? "" : getLeafUINodeParentLabel()) + name;
         if (g_node_depth == -1) {
-            std::string label = "##" + name;
-            ImGui::Text("%s", name.c_str());
-            ImGui::SameLine();
-            if (ImGui::DragInt(label.c_str(), static_cast<int*>(value_ptr)))
+            ImGui::Columns(2);
+            ImGui::Text("%s", (name + ":").c_str());
+            ImGui::NextColumn();
+            // if (ImGui::DragInt(label.c_str(), static_cast<int*>(value_ptr)))
+            if (ImGui::InputInt(label.c_str(), static_cast<int*>(value_ptr)))
                 value_has_changed = true;
-        } else {
-            if (g_editor_node_state_array[g_node_depth].second) {
-                std::string full_label = "##" + getLeafUINodeParentLabel() + name;
-                ImGui::Text("%s", (name + ":").c_str());
-                ImGui::SameLine();
-                if (ImGui::DragInt(full_label.c_str(), static_cast<int*>(value_ptr)))
-                    value_has_changed = true;
-            }
+            ImGui::Columns(1);
+        } else if (g_editor_node_state_array[g_node_depth].second) {
+            ImGui::Columns(2);
+            ImGui::Text("%s", (name + ":").c_str());
+            ImGui::NextColumn();
+            // if (ImGui::DragInt(label.c_str(), static_cast<int*>(value_ptr)))
+            if (ImGui::InputInt(label.c_str(), static_cast<int*>(value_ptr)))
+                value_has_changed = true;
+            ImGui::Columns(1);
         }
         if (on_changed && value_has_changed)
             on_changed();
     };
     m_editor_ui_creator["float"] = [this](const std::string & name, void* value_ptr, const std::function<void()>& on_changed) -> void {
         bool value_has_changed = false;
+        std::string label = "##" + (g_node_depth == -1 ? "" : getLeafUINodeParentLabel()) + name;
         if (g_node_depth == -1) {
-            std::string label = "##" + name;
-            ImGui::Text("%s", name.c_str());
-            ImGui::SameLine();
+            ImGui::Columns(2);
+            ImGui::Text("%s", (name + ":").c_str());
+            ImGui::NextColumn();
             if (ImGui::DragFloat(label.c_str(), static_cast<float*>(value_ptr)))
                 value_has_changed = true;
-        } else {
-            if (g_editor_node_state_array[g_node_depth].second) {
-                std::string full_label = "##" + getLeafUINodeParentLabel() + name;
-                ImGui::Text("%s", (name + ":").c_str());
-                ImGui::SameLine();
-                if (ImGui::DragFloat(full_label.c_str(), static_cast<float*>(value_ptr)))
-                    value_has_changed = true;
+            ImGui::Columns(1);
+        } else if (g_editor_node_state_array[g_node_depth].second) {
+            ImGui::Columns(2);
+            ImGui::Text("%s", (name + ":").c_str());
+            ImGui::NextColumn();
+            if (ImGui::DragFloat(label.c_str(), static_cast<float*>(value_ptr)))
+                value_has_changed = true;
+            ImGui::Columns(1);
+        }
+        if (on_changed && value_has_changed)
+            on_changed();
+    };
+    m_editor_ui_creator["Vector2"] = [this](const std::string & name, void* value_ptr, const std::function<void()>& on_changed) -> void {
+        Vector2* vec_ptr = static_cast<Vector2*>(value_ptr);
+        bool value_has_changed = false;
+        std::string label = "##" + (g_node_depth == -1 ? "" : getLeafUINodeParentLabel()) + name;
+        if (g_node_depth == -1) {
+            float val[2] = {vec_ptr->x, vec_ptr->y};
+            ImGui::Columns(2);
+            ImGui::Text("%s", (name + ":").c_str());
+            ImGui::NextColumn();
+            if (ImGui::DragFloat2(label.c_str(), val)) {
+                value_has_changed = true;
+                vec_ptr->x = val[0]; vec_ptr->y = val[1];
             }
+            ImGui::Columns(1);
+        } else if (g_editor_node_state_array[g_node_depth].second) {
+            if (DrawVecControl(name + ":", label, *vec_ptr))
+                value_has_changed = true;
         }
         if (on_changed && value_has_changed)
             on_changed();
     };
     m_editor_ui_creator["Vector3"] = [this](const std::string & name, void* value_ptr, const std::function<void()>& on_changed) -> void {
         Vector3* vec_ptr = static_cast<Vector3*>(value_ptr);
-        float val[3] = {vec_ptr->x, vec_ptr->y, vec_ptr->z};
         bool value_has_changed = false;
+        std::string label = "##" + (g_node_depth == -1 ? "" : getLeafUINodeParentLabel()) + name;
         if (g_node_depth == -1) {
-            std::string label = "##" + name;
-            ImGui::Text("%s", name.c_str());
-            ImGui::SameLine();
-            if (ImGui::DragFloat3(label.c_str(), val))
+            float val[3] = {vec_ptr->x, vec_ptr->y, vec_ptr->z};
+            ImGui::Columns(2);
+            ImGui::Text("%s", (name + ":").c_str());
+            ImGui::NextColumn();
+            if (ImGui::DragFloat3(label.c_str(), val)) {
                 value_has_changed = true;
-        } else {
-            if (g_editor_node_state_array[g_node_depth].second) {
-                std::string full_label = "##" + getLeafUINodeParentLabel() + name;
-                ImGui::Text("%s", (name + ":").c_str());
-                if (ImGui::DragFloat3(full_label.c_str(), val))
-                    value_has_changed = true;
+                vec_ptr->x = val[0]; vec_ptr->y = val[1]; vec_ptr->z = val[2];
             }
+            ImGui::Columns(1);
+        } else if (g_editor_node_state_array[g_node_depth].second) {
+            if (DrawVecControl(name + ":", label, *vec_ptr))
+                value_has_changed = true;
         }
-        vec_ptr->x = val[0];
-        vec_ptr->y = val[1];
-        vec_ptr->z = val[2];
+        if (on_changed && value_has_changed)
+            on_changed();
+    };
+    m_editor_ui_creator["Vector4"] = [this](const std::string & name, void* value_ptr, const std::function<void()>& on_changed) -> void {
+        Vector4* vec_ptr = static_cast<Vector4*>(value_ptr);
+        bool value_has_changed = false;
+        std::string label = "##" + (g_node_depth == -1 ? "" : getLeafUINodeParentLabel()) + name;
+        if (g_node_depth == -1) {
+            float val[4] = {vec_ptr->x, vec_ptr->y, vec_ptr->z, vec_ptr->w};
+            ImGui::Columns(2);
+            ImGui::Text("%s", (name + ":").c_str());
+            ImGui::NextColumn();
+            if (ImGui::DragFloat4(label.c_str(), val)) {
+                value_has_changed = true;
+                vec_ptr->x = val[0]; vec_ptr->y = val[1]; vec_ptr->z = val[2]; vec_ptr->w = val[3];
+            }
+            ImGui::Columns(1);
+        } else if (g_editor_node_state_array[g_node_depth].second) {
+            if (DrawVecControl(name + ":", label, *vec_ptr))
+                value_has_changed = true;
+        }
         if (on_changed && value_has_changed)
             on_changed();
     };
     m_editor_ui_creator["Quaternion"] = [this](const std::string & name, void* value_ptr, const std::function<void()>& on_changed) -> void {
         Quaternion* qua_ptr = static_cast<Quaternion*>(value_ptr);
-        float val[4] = {qua_ptr->x, qua_ptr->y, qua_ptr->z, qua_ptr->w};
         bool value_has_changed = false;
+        std::string label = "##" + (g_node_depth == -1 ? "" : getLeafUINodeParentLabel()) + name;
         if (g_node_depth == -1) {
-            std::string label = "##" + name;
-            ImGui::Text("%s", name.c_str());
-            ImGui::SameLine();
-            if (ImGui::DragFloat4(label.c_str(), val))
+            float val[4] = {qua_ptr->x, qua_ptr->y, qua_ptr->z, qua_ptr->w};
+            ImGui::Columns(2);
+            ImGui::Text("%s", (name + ":").c_str());
+            ImGui::NextColumn();
+            if (ImGui::DragFloat4(label.c_str(), val)) {
                 value_has_changed = true;
-        } else {
-            if (g_editor_node_state_array[g_node_depth].second) {
-                std::string full_label = "##" + getLeafUINodeParentLabel() + name;
-                ImGui::Text("%s", (name + ":").c_str());
-                if (ImGui::DragFloat4(full_label.c_str(), val))
-                    value_has_changed = true;
+                qua_ptr->x = val[0]; qua_ptr->y = val[1]; qua_ptr->z = val[2]; qua_ptr->w = val[3];
             }
+            ImGui::Columns(1);
+        } else if (g_editor_node_state_array[g_node_depth].second) {
+            if (DrawVecControl(name + ":", label, *qua_ptr))
+                value_has_changed = true;
         }
-        qua_ptr->x = val[0];
-        qua_ptr->y = val[1];
-        qua_ptr->z = val[2];
-        qua_ptr->w = val[3];
         if (on_changed && value_has_changed)
             on_changed();
     };
-    m_editor_ui_creator["std::string"] = [this, &asset_folder](const std::string & name, void* value_ptr, const std::function<void()>& /* on_changed */) -> void {
+    m_editor_ui_creator["std::string"] = [this, &asset_folder](const std::string & name, void* value_ptr, const std::function<void()>& /* on_changed */) -> void { // display only (read only)
         if (g_node_depth == -1) {
-            std::string label = "##" + name;
-            ImGui::Text("%s", name.c_str());
-            ImGui::SameLine();
-            ImGui::Text("%s", (*static_cast<std::string*>(value_ptr)).c_str());
-        } else {
-            if (g_editor_node_state_array[g_node_depth].second) {
-                std::string full_label = "##" + getLeafUINodeParentLabel() + name;
-                ImGui::Text("%s", (name + ":").c_str());
-                std::string value_str = *static_cast<std::string*>(value_ptr);
-                if (value_str.find_first_of('/') != std::string::npos) {
-                    std::filesystem::path value_path(value_str);
-                    if (value_path.is_absolute())
-                        value_path = Path::getRelativePath(asset_folder, value_path);
-                    value_str = value_path.generic_string();
-                    if (value_str.size() >= 2 && value_str[0] == '.' && value_str[1] == '.')
-                        value_str.clear();
-                }
-                ImGui::Text("%s", value_str.c_str());
+            ImGui::Columns(2);
+            ImGui::Text("%s", (name + ":").c_str());
+            ImGui::NextColumn();
+            // ImGui::Text("%s", (*static_cast<std::string*>(value_ptr)).c_str());
+            ImGui::TextWrapped("%s", (*static_cast<std::string*>(value_ptr)).c_str());
+            ImGui::Columns(1);
+        } else if (g_editor_node_state_array[g_node_depth].second) {
+            std::string value_str = *static_cast<std::string*>(value_ptr);
+            if (value_str.find_first_of('/') != std::string::npos) {
+                std::filesystem::path value_path(value_str);
+                if (value_path.is_absolute())
+                    value_path = Path::getRelativePath(asset_folder, value_path);
+                value_str = value_path.generic_string();
+                if (value_str.size() >= 2 && value_str[0] == '.' && value_str[1] == '.')
+                    value_str.clear();
+            }
+            ImGui::Columns(2);
+            ImGui::Text("%s", (name + ":").c_str());
+            ImGui::NextColumn();
+            // ImGui::Text("%s", value_str.c_str());
+            ImGui::TextWrapped("%s", value_str.c_str());
+            ImGui::Columns(1);
+        }
+    };
+    m_editor_ui_creator["EditableString"] = [](const std::string& name, void* value_ptr, const std::function<void()>& on_changed) {
+        // value_ptr 传入 std::pair<size_t, std::string>*，第一个为 string_id，第二个为当前 string
+        auto* id_and_name = static_cast<std::pair<size_t, std::string>*>(value_ptr);
+        size_t object_id = id_and_name->first;
+        std::string& name_ref = id_and_name->second;
+
+        // 用 static map 缓存每个对象的 name buffer
+        static std::unordered_map<size_t, std::array<char, 128>> name_buffers;
+        auto& buffer = name_buffers[object_id];
+        if (buffer[0] == '\0' || name_ref != buffer.data()) { // 初始化或对象切换时刷新
+            memset(buffer.data(), 0, buffer.size());
+            memcpy(buffer.data(), name_ref.c_str(), std::min(name_ref.size(), buffer.size() - 1));
+        }
+
+        ImGui::Columns(2);
+        ImGui::Text("%s", (name + ":").c_str());
+        ImGui::NextColumn();
+        if (ImGui::InputText(("##" + name).c_str(), buffer.data(), buffer.size(), ImGuiInputTextFlags_EnterReturnsTrue)) {
+            if (name_ref != buffer.data()) {
+                name_ref = buffer.data();
+                if (on_changed) on_changed();
             }
         }
+        ImGui::Columns(1);
     };
 }
 
@@ -299,8 +362,7 @@ void EditorUI::showEditorMenu(bool* p_open) {
         ImGuiID left_file_content = ImGui::DockBuilderSplitNode(left, ImGuiDir_Down, 0.30f, nullptr, &left_other);
 
         ImGuiID left_game_engine;
-        ImGuiID left_asset =
-            ImGui::DockBuilderSplitNode(left_other, ImGuiDir_Left, 0.30f, nullptr, &left_game_engine);
+        ImGuiID left_asset = ImGui::DockBuilderSplitNode(left_other, ImGuiDir_Left, 0.30f, nullptr, &left_game_engine);
 
         ImGui::DockBuilderDockWindow("World Objects", left_asset);
         ImGui::DockBuilderDockWindow("Components Details", right);
@@ -460,8 +522,9 @@ void EditorUI::createLeafNodeUI(Reflection::ReflectionInstance &instance) {
                     continue;
                 m_editor_ui_creator[field.getFieldTypeName()](field.getFieldName(), field.get(instance.m_instance), {});
             }
-        } else
+        } else { // 如果存在对应的 UI 创建器
             m_editor_ui_creator[field.getFieldTypeName()](field.getFieldName(), field.get(instance.m_instance), {});
+        }
     }
 }
 
@@ -484,18 +547,18 @@ void EditorUI::showEditorDetailWindow(bool* p_open) {
         return;
     }
 
-    const std::string &name = selected_object->getName();
-    static char        cname[128];
-    memset(cname, 0, 128);
-    memcpy(cname, name.c_str(), name.size());
+    // name
+    std::pair<size_t, std::string> name_pair(selected_object->getID(), selected_object->getName());
+    m_editor_ui_creator["EditableString"]("Name", &name_pair, [selected_object, &name_pair]() {
+        if (name_pair.second != selected_object->getName())
+            selected_object->setName(name_pair.second);
+    });
 
-    ImGui::Text("Name");
-    ImGui::SameLine();
-    ImGui::InputText("##Name", cname, IM_ARRAYSIZE(cname), ImGuiInputTextFlags_ReadOnly);
-
+    // active
     bool* active_ptr = selected_object->getActivePtr();
     m_editor_ui_creator["bool"]("Active", active_ptr, [selected_object, active_ptr](){selected_object->setActive(*active_ptr);});
 
+    // components
     static ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings;
     auto&& selected_object_components = selected_object->getComponents();
     for (auto component_ptr : selected_object_components) {
@@ -880,127 +943,178 @@ void EditorUI::setUIColorStyle() {
 
 void EditorUI::preRender() { showEditorUI(); }
 
-bool DrawVecControl(const std::string &label, Piccolo::Vector3 &values, float resetValue, float columnWidth) {
-    ImGui::PushID(label.c_str());
+// Draw vector control for Piccolo::Vector2 (x, y)
+bool DrawVecControl(const std::string &name, const std::string &label, Piccolo::Vector2 &values, const Piccolo::Vector2 &resetValue, float columnWidth) {
+    ImVec2 buttonSize = {GImGui->Font->FontSize + GImGui->Style.FramePadding.y, GImGui->Font->FontSize + GImGui->Style.FramePadding.y};
+    const char *vec3_names[2], *vec3_labels[2];
+    ImVec4 btn_colors[2], btn_hovered[2], btn_active[2];
+    vec3_names[0] = "X"; vec3_labels[0] = "##X";
+    vec3_names[1] = "Y"; vec3_labels[1] = "##Y";
+    btn_colors[0]   = ImVec4{0.8f, 0.1f, 0.15f, 1.0f}; // R
+    btn_hovered[0]  = ImVec4{0.9f, 0.2f, 0.25f, 1.0f};
+    btn_active[0]   = ImVec4{0.7f, 0.05f, 0.10f, 1.0f};
+    btn_colors[1]   = ImVec4{0.2f, 0.7f, 0.2f, 1.0f};  // G
+    btn_hovered[1]  = ImVec4{0.3f, 0.8f, 0.3f, 1.0f};
+    btn_active[1]   = ImVec4{0.15f, 0.6f, 0.15f, 1.0f};
 
+    ImGui::PushID(label.c_str());
     ImGui::Columns(2);
+    if (columnWidth == 0.0f) // dynamic column width
+        columnWidth = ImGui::CalcTextSize(name.c_str()).x + ImGui::GetStyle().ItemSpacing.x;
     ImGui::SetColumnWidth(0, columnWidth);
-    ImGui::Text("%s", label.c_str());
+    ImGui::Text("%s", name.c_str());
     ImGui::NextColumn();
 
-    ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
+    ImGui::PushMultiItemsWidths(2, ImGui::CalcItemWidth());
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2 {0, 0});
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2.0f, 2.0f));
 
-    float  lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
-    ImVec2 buttonSize = {lineHeight + 3.0f, lineHeight};
+    for (int i = 0; i < 2; ++i) {
+        ImGui::PushStyleColor(ImGuiCol_Button, btn_colors[i]);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, btn_hovered[i]);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, btn_active[i]);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{0, 0, 0, 1}); // 色块中的文字改为黑色
+        if (ImGui::Button(vec3_names[i], buttonSize))
+            (&values.x)[i] = (&resetValue.x)[i];
+        ImGui::PopStyleColor(4);
+        ImGui::SameLine();
+        ImGui::DragFloat(vec3_labels[i], &values.x + i, 0.1f, 0.0f, 0.0f, "%.2f");
+        ImGui::PopItemWidth();
+        if (i != 1) ImGui::SameLine();
+    }
 
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4 {0.8f, 0.1f, 0.15f, 1.0f});
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4 {0.9f, 0.2f, 0.2f, 1.0f});
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4 {0.8f, 0.1f, 0.15f, 1.0f});
-    if (ImGui::Button("X", buttonSize))
-        values.x = resetValue;
-    ImGui::PopStyleColor(3);
-
-    ImGui::SameLine();
-    ImGui::DragFloat("##X", &values.x, 0.1f, 0.0f, 0.0f, "%.2f");
-    ImGui::PopItemWidth();
-    ImGui::SameLine();
-
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4 {0.2f, 0.45f, 0.2f, 1.0f});
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4 {0.3f, 0.55f, 0.3f, 1.0f});
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4 {0.2f, 0.45f, 0.2f, 1.0f});
-    if (ImGui::Button("Y", buttonSize))
-        values.y = resetValue;
-    ImGui::PopStyleColor(3);
-
-    ImGui::SameLine();
-    ImGui::DragFloat("##Y", &values.y, 0.1f, 0.0f, 0.0f, "%.2f");
-    ImGui::PopItemWidth();
-    ImGui::SameLine();
-
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4 {0.1f, 0.25f, 0.8f, 1.0f});
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4 {0.2f, 0.35f, 0.9f, 1.0f});
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4 {0.1f, 0.25f, 0.8f, 1.0f});
-    if (ImGui::Button("Z", buttonSize))
-        values.z = resetValue;
-    ImGui::PopStyleColor(3);
-
-    ImGui::SameLine();
-    ImGui::DragFloat("##Z", &values.z, 0.1f, 0.0f, 0.0f, "%.2f");
-    ImGui::PopItemWidth();
-
-    ImGui::PopStyleVar();
-
+    ImGui::PopStyleVar(2);
     ImGui::Columns(1);
     ImGui::PopID();
     return false;
 }
 
-bool DrawVecControl(const std::string &label, Piccolo::Quaternion &values, float resetValue, float columnWidth) {
-    ImGui::PushID(label.c_str());
+// Draw vector control for Piccolo::Vector3 (x, y, z)
+template<bool asColor>
+bool DrawVecControl(const std::string &name, const std::string &label, Piccolo::Vector3 &values, const Piccolo::Vector3 &resetValue, float columnWidth) {
+    ImVec2 buttonSize = {GImGui->Font->FontSize + GImGui->Style.FramePadding.y, GImGui->Font->FontSize + GImGui->Style.FramePadding.y};
+    const char *vec3_names[3], *vec3_labels[3];
+    ImVec4 btn_colors[3], btn_hovered[3], btn_active[3];
+    btn_colors[0]   = ImVec4{0.8f, 0.1f, 0.15f, 1.0f}; // R
+    btn_hovered[0]  = ImVec4{0.9f, 0.2f, 0.25f, 1.0f};
+    btn_active[0]   = ImVec4{0.7f, 0.05f, 0.10f, 1.0f};
+    btn_colors[1]   = ImVec4{0.2f, 0.7f, 0.2f, 1.0f};  // G
+    btn_hovered[1]  = ImVec4{0.3f, 0.8f, 0.3f, 1.0f};
+    btn_active[1]   = ImVec4{0.15f, 0.6f, 0.15f, 1.0f};
+    btn_colors[2]   = ImVec4{0.1f, 0.25f, 0.8f, 1.0f}; // B
+    btn_hovered[2]  = ImVec4{0.2f, 0.35f, 0.9f, 1.0f};
+    btn_active[2]   = ImVec4{0.05f, 0.15f, 0.7f, 1.0f};
+    if constexpr (asColor) { // R/G/B
+        vec3_names[0] = "R"; vec3_labels[0] = "##R";
+        vec3_names[1] = "G"; vec3_labels[1] = "##G";
+        vec3_names[2] = "B"; vec3_labels[2] = "##B";
+    } else { // X/Y/Z
+        vec3_names[0] = "X"; vec3_labels[0] = "##X";
+        vec3_names[1] = "Y"; vec3_labels[1] = "##Y";
+        vec3_names[2] = "Z"; vec3_labels[2] = "##Z";
+    }
 
+    ImGui::PushID(label.c_str());
     ImGui::Columns(2);
+    if (columnWidth == 0.0f) // dynamic column width
+        columnWidth = ImGui::CalcTextSize(name.c_str()).x + ImGui::GetStyle().ItemSpacing.x;
     ImGui::SetColumnWidth(0, columnWidth);
-    ImGui::Text("%s", label.c_str());
+    ImGui::Text("%s", name.c_str());
     ImGui::NextColumn();
 
     ImGui::PushMultiItemsWidths(4, ImGui::CalcItemWidth());
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2 {0, 0});
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2.0f, 2.0f));
 
-    float  lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
-    ImVec2 buttonSize = {lineHeight + 3.0f, lineHeight};
+    for (int i = 0; i < 3; ++i) {
+        ImGui::PushStyleColor(ImGuiCol_Button, btn_colors[i]);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, btn_hovered[i]);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, btn_active[i]);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{0, 0, 0, 1}); // 色块中的文字改为黑色
+        if (ImGui::Button(vec3_names[i], buttonSize))
+            (&values.x)[i] = (&resetValue.x)[i];
+        ImGui::PopStyleColor(4);
+        ImGui::SameLine();
+        ImGui::DragFloat(vec3_labels[i], &values.x + i, 0.1f, 0.0f, 0.0f, "%.2f");
+        ImGui::PopItemWidth();
+        if (i != 2) ImGui::SameLine();
+    }
 
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4 {0.8f, 0.1f, 0.15f, 1.0f});
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4 {0.9f, 0.2f, 0.2f, 1.0f});
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4 {0.8f, 0.1f, 0.15f, 1.0f});
-    if (ImGui::Button("X", buttonSize))
-        values.x = resetValue;
-    ImGui::PopStyleColor(3);
-
-    ImGui::SameLine();
-    ImGui::DragFloat("##X", &values.x, 0.1f, 0.0f, 0.0f, "%.2f");
-    ImGui::PopItemWidth();
-    ImGui::SameLine();
-
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4 {0.2f, 0.45f, 0.2f, 1.0f});
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4 {0.3f, 0.55f, 0.3f, 1.0f});
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4 {0.2f, 0.45f, 0.2f, 1.0f});
-    if (ImGui::Button("Y", buttonSize))
-        values.y = resetValue;
-    ImGui::PopStyleColor(3);
-
-    ImGui::SameLine();
-    ImGui::DragFloat("##Y", &values.y, 0.1f, 0.0f, 0.0f, "%.2f");
-    ImGui::PopItemWidth();
-    ImGui::SameLine();
-
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4 {0.1f, 0.25f, 0.8f, 1.0f});
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4 {0.2f, 0.35f, 0.9f, 1.0f});
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4 {0.1f, 0.25f, 0.8f, 1.0f});
-    if (ImGui::Button("Z", buttonSize))
-        values.z = resetValue;
-    ImGui::PopStyleColor(3);
-
-    ImGui::SameLine();
-    ImGui::DragFloat("##Z", &values.z, 0.1f, 0.0f, 0.0f, "%.2f");
-    ImGui::PopItemWidth();
-    ImGui::SameLine();
-
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4 {0.5f, 0.25f, 0.5f, 1.0f});
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4 {0.6f, 0.35f, 0.6f, 1.0f});
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4 {0.5f, 0.25f, 0.5f, 1.0f});
-    if (ImGui::Button("W", buttonSize))
-        values.w = resetValue;
-    ImGui::PopStyleColor(3);
-
-    ImGui::SameLine();
-    ImGui::DragFloat("##W", &values.w, 0.1f, 0.0f, 0.0f, "%.2f");
-    ImGui::PopItemWidth();
-
-    ImGui::PopStyleVar();
-
+    ImGui::PopStyleVar(2);
     ImGui::Columns(1);
     ImGui::PopID();
     return false;
+}
+
+// Draw vector control for Piccolo::Vector4 (x, y, z, w) or (r, g, b, a)
+template<bool asColor>
+bool DrawVecControl(const std::string &name, const std::string &label, Piccolo::Vector4 &values, const Piccolo::Vector4 &resetValue, float columnWidth) {
+    ImVec2 buttonSize = {GImGui->Font->FontSize + GImGui->Style.FramePadding.y, GImGui->Font->FontSize + GImGui->Style.FramePadding.y};
+    const char *vec4_names[4], *vec4_labels[4];
+    ImVec4 btn_colors[4], btn_hovered[4], btn_active[4];
+    btn_colors[0]   = ImVec4{0.8f, 0.1f, 0.15f, 1.0f}; // R
+    btn_hovered[0]  = ImVec4{0.9f, 0.2f, 0.25f, 1.0f};
+    btn_active[0]   = ImVec4{0.7f, 0.05f, 0.10f, 1.0f};
+    btn_colors[1]   = ImVec4{0.2f, 0.7f, 0.2f, 1.0f};  // G
+    btn_hovered[1]  = ImVec4{0.3f, 0.8f, 0.3f, 1.0f};
+    btn_active[1]   = ImVec4{0.15f, 0.6f, 0.15f, 1.0f};
+    btn_colors[2]   = ImVec4{0.1f, 0.25f, 0.8f, 1.0f}; // B
+    btn_hovered[2]  = ImVec4{0.2f, 0.35f, 0.9f, 1.0f};
+    btn_active[2]   = ImVec4{0.05f, 0.15f, 0.7f, 1.0f};
+    if constexpr (asColor) { // R/G/B/A
+        vec4_names[0] = "R"; vec4_labels[0] = "##R";
+        vec4_names[1] = "G"; vec4_labels[1] = "##G";
+        vec4_names[2] = "B"; vec4_labels[2] = "##B";
+        vec4_names[3] = "A"; vec4_labels[3] = "##A";
+        btn_colors[3]   = ImVec4{0.6f, 0.2f, 0.8f, 1.0f};  // A (紫)
+        btn_hovered[3]  = ImVec4{0.7f, 0.3f, 0.9f, 1.0f};
+        btn_active[3]   = ImVec4{0.5f, 0.1f, 0.7f, 1.0f};
+    } else { // X/Y/Z/W
+        vec4_names[0] = "X"; vec4_labels[0] = "##X";
+        vec4_names[1] = "Y"; vec4_labels[1] = "##Y";
+        vec4_names[2] = "Z"; vec4_labels[2] = "##Z";
+        vec4_names[3] = "W"; vec4_labels[3] = "##W";
+        btn_colors[3]   = ImVec4{0.5f, 0.5f, 0.5f, 1.0f};  // W (灰)
+        btn_hovered[3]  = ImVec4{0.7f, 0.7f, 0.7f, 1.0f};
+        btn_active[3]   = ImVec4{0.3f, 0.3f, 0.3f, 1.0f};
+    }
+
+    ImGui::PushID(label.c_str());
+    ImGui::Columns(2);
+    if (columnWidth == 0.0f) // dynamic column width
+        columnWidth = ImGui::CalcTextSize(name.c_str()).x + ImGui::GetStyle().ItemSpacing.x;
+    ImGui::SetColumnWidth(0, columnWidth);
+    ImGui::Text("%s", name.c_str());
+    ImGui::NextColumn();
+
+    ImGui::PushMultiItemsWidths(4, ImGui::CalcItemWidth());
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2 {0, 0});
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2.0f, 2.0f));
+
+    for (int i = 0; i < 4; ++i) {
+        ImGui::PushStyleColor(ImGuiCol_Button, btn_colors[i]);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, btn_hovered[i]);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, btn_active[i]);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{0, 0, 0, 1}); // 色块中的文字改为黑色
+        if (ImGui::Button(vec4_names[i], buttonSize))
+            (&values.x)[i] = (&resetValue.x)[i];
+        ImGui::PopStyleColor(4);
+        ImGui::SameLine();
+        ImGui::DragFloat(vec4_labels[i], &values.x + i, 0.1f, 0.0f, 1.0f, "%.2f");
+        ImGui::PopItemWidth();
+        if (i != 3) ImGui::SameLine();
+    }
+
+    ImGui::PopStyleVar(2);
+    ImGui::Columns(1);
+    ImGui::PopID();
+    return false;
+}
+
+// Draw vector control for Piccolo::Quaternion (x, y, z, w)
+bool DrawVecControl(const std::string &name, const std::string &label, Piccolo::Quaternion &values, const Piccolo::Quaternion &resetValue, float columnWidth) {
+    Vector4 vec_values = {values.x, values.y, values.z, values.w};
+    Vector4 vec_resetValue = {resetValue.x, resetValue.y, resetValue.z, resetValue.w};
+    return DrawVecControl(name, label, vec_values, vec_resetValue, columnWidth);
 }
 } // namespace Piccolo
