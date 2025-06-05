@@ -13,6 +13,7 @@ TODO
   8. Explosion Engine https://github.com/ExplosionEngine/Explosion
 
 
+<!--
 # Piccolo Engine (formerly Pilot Engine)
 
 <p align="center">
@@ -126,3 +127,4 @@ cmake -S . -B build -DENABLE_PHYSICS_DEBUG_RENDERER=ON
 Note:
 1. Please clean the build directory before regenerating the solution. We've encountered building problems in regenerating directly with previous CMakeCache.
 2. Physics Debug Renderer will run when you start PiccoloEditor. We've synced the camera position between both scenes. But the initial camera mode in Physics Debug Renderer is wrong. Scrolling down the mouse wheel once will change the camera of Physics Debug Renderer to the correct mode.
+-->
