@@ -7,6 +7,10 @@
 #include <functional>
 #include <vector>
 
+// WindowSystem 封装了 GLFW 窗口的创建和事件处理，定义了多种回调函数类型，并提供注册接口
+// 在 initialize() 函数中，创建了 GLFW 窗口并设置了静态回调函数，这些回调函数会拿到 app 指针，然后调用各个 onxxx() 函数
+// 这些 onxxx() 函数会遍历注册的回调函数列表并调用它们，这些已注册回调都是 InputSystem 或 EditorInputManager 的成员函数
+
 namespace Piccolo {
 struct WindowCreateInfo {
     int         width {1280};
@@ -26,17 +30,17 @@ public:
     GLFWwindow*        getWindow() const;
     std::array<int, 2> getWindowSize() const;
 
-    typedef std::function<void()>                   onResetFunc;
-    typedef std::function<void(int, int, int, int)> onKeyFunc;
-    typedef std::function<void(unsigned int)>       onCharFunc;
-    typedef std::function<void(int, unsigned int)>  onCharModsFunc;
-    typedef std::function<void(int, int, int)>      onMouseButtonFunc;
-    typedef std::function<void(double, double)>     onCursorPosFunc;
-    typedef std::function<void(int)>                onCursorEnterFunc;
-    typedef std::function<void(double, double)>     onScrollFunc;
-    typedef std::function<void(int, const char**)>  onDropFunc;
-    typedef std::function<void(int, int)>           onWindowSizeFunc;
-    typedef std::function<void()>                   onWindowCloseFunc;
+    typedef std::function<void()>                   onResetFunc;       // no parameters
+    typedef std::function<void(int, int, int, int)> onKeyFunc;         // key, scancode, action, mods
+    typedef std::function<void(unsigned int)>       onCharFunc;        // codepoint
+    typedef std::function<void(int, unsigned int)>  onCharModsFunc;    // codepoint, mods
+    typedef std::function<void(int, int, int)>      onMouseButtonFunc; // button, action, mods
+    typedef std::function<void(double, double)>     onCursorPosFunc;   // xpos, ypos
+    typedef std::function<void(int)>                onCursorEnterFunc; // entered (1 if entered, 0 if exited)
+    typedef std::function<void(double, double)>     onScrollFunc;      // xoffset, yoffset
+    typedef std::function<void(int, const char**)>  onDropFunc;        // count, paths
+    typedef std::function<void(int, int)>           onWindowSizeFunc;  // width, height
+    typedef std::function<void()>                   onWindowCloseFunc; // no parameters
 
     void registerOnResetFunc(onResetFunc func) { m_onResetFunc.push_back(func); }
     void registerOnKeyFunc(onKeyFunc func) { m_onKeyFunc.push_back(func); }
@@ -62,43 +66,35 @@ protected:
     // window event callbacks
     static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
         WindowSystem* app = (WindowSystem*)glfwGetWindowUserPointer(window);
-        if (app)
-            app->onKey(key, scancode, action, mods);
+        if (app) app->onKey(key, scancode, action, mods);
     }
     static void charCallback(GLFWwindow* window, unsigned int codepoint) {
         WindowSystem* app = (WindowSystem*)glfwGetWindowUserPointer(window);
-        if (app)
-            app->onChar(codepoint);
+        if (app) app->onChar(codepoint);
     }
     static void charModsCallback(GLFWwindow* window, unsigned int codepoint, int mods) {
         WindowSystem* app = (WindowSystem*)glfwGetWindowUserPointer(window);
-        if (app)
-            app->onCharMods(codepoint, mods);
+        if (app) app->onCharMods(codepoint, mods);
     }
     static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
         WindowSystem* app = (WindowSystem*)glfwGetWindowUserPointer(window);
-        if (app)
-            app->onMouseButton(button, action, mods);
+        if (app) app->onMouseButton(button, action, mods);
     }
     static void cursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
         WindowSystem* app = (WindowSystem*)glfwGetWindowUserPointer(window);
-        if (app)
-            app->onCursorPos(xpos, ypos);
+        if (app) app->onCursorPos(xpos, ypos);
     }
     static void cursorEnterCallback(GLFWwindow* window, int entered) {
         WindowSystem* app = (WindowSystem*)glfwGetWindowUserPointer(window);
-        if (app)
-            app->onCursorEnter(entered);
+        if (app) app->onCursorEnter(entered);
     }
     static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
         WindowSystem* app = (WindowSystem*)glfwGetWindowUserPointer(window);
-        if (app)
-            app->onScroll(xoffset, yoffset);
+        if (app) app->onScroll(xoffset, yoffset);
     }
     static void dropCallback(GLFWwindow* window, int count, const char** paths) {
         WindowSystem* app = (WindowSystem*)glfwGetWindowUserPointer(window);
-        if (app)
-            app->onDrop(count, paths);
+        if (app) app->onDrop(count, paths);
     }
     static void windowSizeCallback(GLFWwindow* window, int width, int height) {
         WindowSystem* app = (WindowSystem*)glfwGetWindowUserPointer(window);

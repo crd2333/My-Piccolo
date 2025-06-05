@@ -59,7 +59,7 @@ void MotorComponent::tickPlayerMotor(float delta_time) {
     TransformComponent* transform_component =
         m_parent_object.lock()->tryGetComponent<TransformComponent>("TransformComponent");
 
-    Radian turn_angle_yaw = g_runtime_global_context.m_input_system->m_cursor_delta_yaw;
+    Radian turn_angle_yaw = g_runtime_global_context.m_input_system->getCursorDeltaYaw();
 
     unsigned int command = g_runtime_global_context.m_input_system->getGameCommand();
 

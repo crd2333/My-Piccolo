@@ -70,8 +70,8 @@ void CameraComponent::tickFirstPersonCamera(float delta_time) {
 
     Quaternion q_yaw, q_pitch;
 
-    q_yaw.fromAngleAxis(g_runtime_global_context.m_input_system->m_cursor_delta_yaw, Vector3::UNIT_Z);
-    q_pitch.fromAngleAxis(g_runtime_global_context.m_input_system->m_cursor_delta_pitch, m_left);
+    q_yaw.fromAngleAxis(g_runtime_global_context.m_input_system->getCursorDeltaYaw(), Vector3::UNIT_Z);
+    q_pitch.fromAngleAxis(g_runtime_global_context.m_input_system->getCursorDeltaPitch(), m_left);
 
     const float offset  = static_cast<FirstPersonCameraParameter*>(m_camera_res.m_parameter)->m_vertical_offset;
     m_position = current_character->getPosition() + offset * Vector3::UNIT_Z;
@@ -105,8 +105,8 @@ void CameraComponent::tickThirdPersonCamera(float delta_time) {
 
     Quaternion q_yaw, q_pitch;
 
-    q_yaw.fromAngleAxis(g_runtime_global_context.m_input_system->m_cursor_delta_yaw, Vector3::UNIT_Z);
-    q_pitch.fromAngleAxis(g_runtime_global_context.m_input_system->m_cursor_delta_pitch, Vector3::UNIT_X);
+    q_yaw.fromAngleAxis(g_runtime_global_context.m_input_system->getCursorDeltaYaw(), Vector3::UNIT_Z);
+    q_pitch.fromAngleAxis(g_runtime_global_context.m_input_system->getCursorDeltaPitch(), Vector3::UNIT_X);
 
     param->m_cursor_pitch = q_pitch * param->m_cursor_pitch;
 
@@ -144,8 +144,8 @@ void CameraComponent::tickFreeCamera(float delta_time) {
 
     Quaternion q_yaw, q_pitch;
 
-    q_yaw.fromAngleAxis(g_runtime_global_context.m_input_system->m_cursor_delta_yaw, Vector3::UNIT_Z);
-    q_pitch.fromAngleAxis(g_runtime_global_context.m_input_system->m_cursor_delta_pitch, m_left);
+    q_yaw.fromAngleAxis(g_runtime_global_context.m_input_system->getCursorDeltaYaw(), Vector3::UNIT_Z);
+    q_pitch.fromAngleAxis(g_runtime_global_context.m_input_system->getCursorDeltaPitch(), m_left);
 
     m_forward = q_yaw * q_pitch * m_forward;
     m_left = q_yaw * q_pitch * m_left;

@@ -60,7 +60,7 @@ void RuntimeGlobalContext::startSystems(const std::string &config_file_path) {
 }
 
 void RuntimeGlobalContext::shutdownSystems() {
-    m_render_debug_config.reset();
+    m_render_debug_config.reset(); // .reset 是对 shared_ptr 的调用，释放资源
 
     m_debugdraw_manager.reset();
 
