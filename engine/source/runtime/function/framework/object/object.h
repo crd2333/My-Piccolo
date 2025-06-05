@@ -31,7 +31,6 @@ public:
 
     // active state
     void setActive(bool active);
-    bool* getActivePtr() { return &m_active; }
     bool isActive() const { return m_active; }
 
     bool hasComponent(const std::string &compenent_type_name) const;

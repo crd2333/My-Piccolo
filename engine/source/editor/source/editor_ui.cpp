@@ -555,8 +555,10 @@ void EditorUI::showEditorDetailWindow(bool* p_open) {
     });
 
     // active
-    bool* active_ptr = selected_object->getActivePtr();
-    m_editor_ui_creator["bool"]("Active", active_ptr, [selected_object, active_ptr](){selected_object->setActive(*active_ptr);});
+    bool active_temp = selected_object->isActive();
+    m_editor_ui_creator["bool"]("Active", &active_temp, [selected_object, active_temp]() {
+        selected_object->setActive(!active_temp);
+    });
 
     // components
     static ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings;
