@@ -13,10 +13,7 @@
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": false,
-            // "preLaunchTask": "build"
+            "preLaunchTask": "build"
         }
     ]
 }
-// VS 编译出的 exe
-// build\engine\source\editor\Debug\PiccoloEditor.exe

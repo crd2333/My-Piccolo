@@ -39,6 +39,6 @@ private:
     bool       m_rotation_dirty {false};
 
     CameraMode m_original_camera_mode;
-    bool       m_is_free_camera{false};
+    bool       m_is_free_camera {false};
 };
 } // namespace Piccolo

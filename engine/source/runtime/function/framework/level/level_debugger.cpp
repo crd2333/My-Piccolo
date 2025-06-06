@@ -209,7 +209,7 @@ void LevelDebugger::drawCameraInfo(std::shared_ptr<GObject> object) const {
     buffer << std::endl;
 
     Vector3 position  = camera_component->getPosition();
-    Vector3 forward   = camera_component->getForward();
+    Vector3 forward   = camera_component->forward();
     Vector3 direction = forward - position;
     buffer << "camera position: (" << position.x << "," << position.y << "," << position.z << ")" << std::endl;
     buffer << "camera direction : (" << direction.x << "," << direction.y << "," << direction.z << ")";

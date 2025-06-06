@@ -14,14 +14,12 @@ class RenderCamera {
 public:
     RenderCameraType m_current_camera_type {RenderCameraType::Editor};
 
-    static const Vector3 X, Y, Z;
-
     Vector3    m_position {0.0f, 0.0f, 0.0f};
     Quaternion m_rotation {Quaternion::IDENTITY};
     Quaternion m_invRotation {Quaternion::IDENTITY};
     float      m_znear {1000.0f};
     float      m_zfar {0.1f};
-    Vector3    m_up_axis {Z};
+    Vector3    m_up_axis {Vector3::UNIT_Z};
 
     static constexpr float MIN_FOV {10.0f};
     static constexpr float MAX_FOV {89.0f};
@@ -42,10 +40,10 @@ public:
 
     Vector3    position() const { return m_position; }
     Quaternion rotation() const { return m_rotation; }
+    Vector3    forward() const { return (m_invRotation * Vector3::UNIT_Y); }
+    Vector3    up() const { return (m_invRotation * Vector3::UNIT_Z); }
+    Vector3    right() const { return (m_invRotation * Vector3::UNIT_X); }
 
-    Vector3   forward() const { return (m_invRotation * Y); }
-    Vector3   up() const { return (m_invRotation * Z); }
-    Vector3   right() const { return (m_invRotation * X); }
     Vector2   getFOV() const { return {m_fovx, m_fovy}; }
     Matrix4x4 getViewMatrix();
     Matrix4x4 getPersProjMatrix() const;
@@ -59,9 +57,4 @@ protected:
 
     std::mutex m_view_matrix_mutex;
 };
-
-inline const Vector3 RenderCamera::X = {1.0f, 0.0f, 0.0f};
-inline const Vector3 RenderCamera::Y = {0.0f, 1.0f, 0.0f};
-inline const Vector3 RenderCamera::Z = {0.0f, 0.0f, 1.0f};
-
 } // namespace Piccolo

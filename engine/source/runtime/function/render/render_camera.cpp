@@ -21,20 +21,20 @@ void RenderCamera::move(Vector3 delta) { m_position += delta; }
 
 void RenderCamera::rotate(Vector2 delta) {
     // rotation around x, y axis
-    delta = Vector2(Radian(Degree(delta.x)).valueRadians(), Radian(Degree(delta.y)).valueRadians());
+    delta.x = Math::degreesToRadians(delta.x);
+    delta.y = Math::degreesToRadians(delta.y);
 
     // limit pitch
     float dot = m_up_axis.dotProduct(forward());
-    if ((dot < -0.99f && delta.x > 0.0f) || // angle nearing 180 degrees
-        (dot > 0.99f && delta.x < 0.0f))    // angle nearing 0 degrees
+    if ((dot < -0.99f && delta.x > 0.0f) || (dot > 0.99f && delta.x < 0.0f)) // angle nearing 180 / 0 degrees
         delta.x = 0.0f;
 
     // pitch is relative to current sideways rotation
     // yaw happens independently
     // this prevents roll
     Quaternion pitch, yaw;
-    pitch.fromAngleAxis(Radian(delta.x), X);
-    yaw.fromAngleAxis(Radian(delta.y), Z);
+    pitch.fromAngleAxis(Radian(delta.x), Vector3::UNIT_X);
+    yaw.fromAngleAxis(Radian(delta.y), Vector3::UNIT_Z);
 
     m_rotation = pitch * m_rotation * yaw;
 
@@ -52,14 +52,14 @@ void RenderCamera::lookAt(const Vector3 &position, const Vector3 &target, const 
     // model rotation
     // maps vectors to camera space (x, y, z)
     Vector3 forward = (target - position).normalisedCopy();
-    m_rotation      = forward.getRotationTo(Y);
+    m_rotation      = forward.getRotationTo(Vector3::UNIT_Y);
 
     // correct the up vector
     // the cross product of non-orthogonal vectors is not normalized
     Vector3 right  = forward.crossProduct(up.normalisedCopy()).normalisedCopy();
     Vector3 orthUp = right.crossProduct(forward);
 
-    Quaternion upRotation = (m_rotation * orthUp).getRotationTo(Z);
+    Quaternion upRotation = (m_rotation * orthUp).getRotationTo(Vector3::UNIT_Z);
 
     m_rotation = Quaternion(upRotation) * m_rotation;
 

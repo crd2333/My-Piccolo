@@ -153,24 +153,16 @@ void EditorInputManager::onCursorPos(double xpos, double ypos) {
     if (!g_is_editor_mode)
         return;
 
-    float angularVelocity =
-        180.0f / Math::max(m_engine_window_size.x, m_engine_window_size.y); // 180 degrees while moving full screen
+    float angularVelocity = 180.0f / Math::max(m_engine_window_size.x, m_engine_window_size.y); // 180 degrees while moving full screen
     if (m_mouse_x >= 0.0f && m_mouse_y >= 0.0f) {
         if (g_editor_global_context.m_window_system->isMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT)) {
-            glfwSetInputMode(
-                g_editor_global_context.m_window_system->getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            g_editor_global_context.m_scene_manager->getEditorCamera()->rotate(
-                                       Vector2(ypos - m_mouse_y, xpos - m_mouse_x) * angularVelocity);
+            glfwSetInputMode(g_editor_global_context.m_window_system->getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            g_editor_global_context.m_scene_manager->getEditorCamera()->rotate(Vector2(ypos - m_mouse_y, xpos - m_mouse_x) * angularVelocity);
         } else if (g_editor_global_context.m_window_system->isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT)) {
-            g_editor_global_context.m_scene_manager->moveEntity(
-                                       xpos,
-                                       ypos,
-                                       m_mouse_x,
-                                       m_mouse_y,
-                                       m_engine_window_pos,
-                                       m_engine_window_size,
-                                       m_cursor_on_axis,
-                                       g_editor_global_context.m_scene_manager->getSelectedObjectMatrix());
+            g_editor_global_context.m_scene_manager->moveEntity(xpos, ypos,
+                                                                m_mouse_x, m_mouse_y,
+                                                                m_engine_window_pos, m_engine_window_size, m_cursor_on_axis,
+                                                                g_editor_global_context.m_scene_manager->getSelectedObjectMatrix());
             glfwSetInputMode(g_editor_global_context.m_window_system->getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         } else {
             glfwSetInputMode(g_editor_global_context.m_window_system->getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);

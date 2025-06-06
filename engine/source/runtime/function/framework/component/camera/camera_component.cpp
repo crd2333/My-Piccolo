@@ -47,136 +47,119 @@ void CameraComponent::tick(float delta_time) {
     if (current_character->getObjectID() != m_parent_object.lock()->getID())
         return;
 
+    // Common input processing
+    float delta_pitch_rad = g_runtime_global_context.m_input_system->getCursorDeltaPitch().valueRadians();
+    float delta_yaw_rad   = g_runtime_global_context.m_input_system->getCursorDeltaYaw().valueRadians();
+
+    // Common pitch limiting (uses m_forward from previous frame state)
+    float dot_forward_worldup = m_forward.dotProduct(Vector3::UNIT_Z);
+    if ((dot_forward_worldup < -0.99f && delta_pitch_rad > 0.0f) || (dot_forward_worldup > 0.99f && delta_pitch_rad < 0.0f)) {
+        delta_pitch_rad = 0.0f; // limit pitch
+    }
+
+    Quaternion q_yaw/* , q_pitch */;
+    q_yaw.fromAngleAxis(Radian(delta_yaw_rad), Vector3::UNIT_Z);
+    // pitch is handled separately in each camera mode (because of different axes)
+
     switch (m_camera_mode) {
     case CameraMode::first_person:
-        tickFirstPersonCamera(delta_time);
+        tickFirstPersonCamera(delta_time, current_character, delta_pitch_rad, q_yaw);
         break;
     case CameraMode::third_person:
-        tickThirdPersonCamera(delta_time);
+        tickThirdPersonCamera(delta_time, current_character, delta_pitch_rad, q_yaw);
         break;
     case CameraMode::free:
-        tickFreeCamera(delta_time);
+        tickFreeCamera(delta_time, delta_pitch_rad, q_yaw);
         break;
     default:
         break;
     }
+
+    updateCameraRenderData();
 }
 
-void CameraComponent::tickFirstPersonCamera(float delta_time) {
-    std::shared_ptr<Level> current_level = g_runtime_global_context.m_world_manager->getCurrentActiveLevel().lock();
-    std::shared_ptr<Character> current_character = current_level->getCurrentActiveCharacter().lock();
-    if (current_character == nullptr)
-        return;
+void CameraComponent::updateCameraRenderData() {
+    Matrix4x4 desired_mat = Math::makeLookAtMatrix(m_position, m_position + m_forward, m_up);
 
-    Quaternion q_yaw, q_pitch;
+    RenderSwapContext &swap_context = g_runtime_global_context.m_render_system->getSwapContext();
+    CameraSwapData camera_swap_data;
+    camera_swap_data.m_camera_type = RenderCameraType::Motor;
+    camera_swap_data.m_view_matrix = desired_mat;
+    swap_context.getLogicSwapData().m_camera_swap_data = camera_swap_data;
+}
 
-    q_yaw.fromAngleAxis(g_runtime_global_context.m_input_system->getCursorDeltaYaw(), Vector3::UNIT_Z);
-    q_pitch.fromAngleAxis(g_runtime_global_context.m_input_system->getCursorDeltaPitch(), m_left);
+void CameraComponent::tickFirstPersonCamera(float delta_time, std::shared_ptr<Character> current_character, float delta_pitch_rad, const Quaternion& q_yaw) {
+    Quaternion q_pitch;
+    q_pitch.fromAngleAxis(Radian(delta_pitch_rad), m_left); // Pitch around camera's local left axis
 
-    const float offset  = static_cast<FirstPersonCameraParameter*>(m_camera_res.m_parameter)->m_vertical_offset;
+    const auto* param = static_cast<FirstPersonCameraParameter*>(m_camera_res.m_parameter);
+    const float offset  = param->m_vertical_offset;
     m_position = current_character->getPosition() + offset * Vector3::UNIT_Z;
 
     m_forward = q_yaw * q_pitch * m_forward;
     m_left    = q_yaw * q_pitch * m_left;
     m_up      = m_forward.crossProduct(m_left);
 
-    Matrix4x4 desired_mat = Math::makeLookAtMatrix(m_position, m_position + m_forward, m_up);
-
-    RenderSwapContext &swap_context = g_runtime_global_context.m_render_system->getSwapContext();
-    CameraSwapData     camera_swap_data;
-    camera_swap_data.m_camera_type                     = RenderCameraType::Motor;
-    camera_swap_data.m_view_matrix                     = desired_mat;
-    swap_context.getLogicSwapData().m_camera_swap_data = camera_swap_data;
-
-    Vector3    object_facing = m_forward - m_forward.dotProduct(Vector3::UNIT_Z) * Vector3::UNIT_Z;
-    Vector3    object_left   = Vector3::UNIT_Z.crossProduct(object_facing);
+    Vector3 object_facing = m_forward - m_forward.dotProduct(Vector3::UNIT_Z) * Vector3::UNIT_Z;
+    Vector3 object_left   = Vector3::UNIT_Z.crossProduct(object_facing);
     Quaternion object_rotation;
     object_rotation.fromAxes(object_left, -object_facing, Vector3::UNIT_Z);
-    current_character->setRotation(object_rotation);
+    current_character->setRotation(object_rotation); // Apply input yaw to character
 }
 
-void CameraComponent::tickThirdPersonCamera(float delta_time) {
-    std::shared_ptr<Level> current_level = g_runtime_global_context.m_world_manager->getCurrentActiveLevel().lock();
-    std::shared_ptr<Character> current_character = current_level->getCurrentActiveCharacter().lock();
-    if (current_character == nullptr)
-        return;
+void CameraComponent::tickThirdPersonCamera(float delta_time, std::shared_ptr<Character> current_character, float delta_pitch_rad, const Quaternion& q_yaw) {
+    auto* param = static_cast<ThirdPersonCameraParameter*>(m_camera_res.m_parameter);
 
-    ThirdPersonCameraParameter* param = static_cast<ThirdPersonCameraParameter*>(m_camera_res.m_parameter);
+    Quaternion q_pitch;
+    q_pitch.fromAngleAxis(Radian(delta_pitch_rad), Vector3::UNIT_X); // Pitch around world/character's X axis
 
-    Quaternion q_yaw, q_pitch;
-
-    q_yaw.fromAngleAxis(g_runtime_global_context.m_input_system->getCursorDeltaYaw(), Vector3::UNIT_Z);
-    q_pitch.fromAngleAxis(g_runtime_global_context.m_input_system->getCursorDeltaPitch(), Vector3::UNIT_X);
-
-    param->m_cursor_pitch = q_pitch * param->m_cursor_pitch;
+    param->m_cursor_pitch = q_pitch * param->m_cursor_pitch; // Accumulate pitch for the orbit
 
     const float vertical_offset   = param->m_vertical_offset;
     const float horizontal_offset = param->m_horizontal_offset;
-    Vector3     offset            = Vector3(0, horizontal_offset, vertical_offset);
+    Vector3 camera_offset_vector = Vector3(0, horizontal_offset, vertical_offset);
 
-    Vector3 center_pos = current_character->getPosition() + Vector3::UNIT_Z * vertical_offset;
-    m_position =
-        current_character->getRotation() * param->m_cursor_pitch * offset + current_character->getPosition();
+    Vector3 char_pos = current_character->getPosition();
+    Quaternion char_rot = current_character->getRotation(); // Original character rotation (mainly yaw)
 
-    m_forward = center_pos - m_position;
-    m_up = current_character->getRotation() * param->m_cursor_pitch * Vector3::UNIT_Z;
-    m_left = m_up.crossProduct(m_forward);
+    Vector3 center_pos = char_pos + Vector3::UNIT_Z * vertical_offset;
+    m_position = char_rot * param->m_cursor_pitch * camera_offset_vector + char_pos;
 
-    current_character->setRotation(q_yaw * current_character->getRotation());
+    m_forward = center_pos - m_position; m_forward.normalise();
+    m_up      = char_rot * param->m_cursor_pitch * Vector3::UNIT_Z;
+    m_left    = m_up.crossProduct(m_forward);
 
-    Matrix4x4 desired_mat = Math::makeLookAtMatrix(m_position, m_position + m_forward, m_up);
-
-    RenderSwapContext &swap_context = g_runtime_global_context.m_render_system->getSwapContext();
-    CameraSwapData     camera_swap_data;
-    camera_swap_data.m_camera_type                     = RenderCameraType::Motor;
-    camera_swap_data.m_view_matrix                     = desired_mat;
-    swap_context.getLogicSwapData().m_camera_swap_data = camera_swap_data;
+    current_character->setRotation(q_yaw * char_rot); // Apply input yaw to character
 }
 
-void CameraComponent::tickFreeCamera(float delta_time) {
+void CameraComponent::tickFreeCamera(float delta_time, float delta_pitch_rad, const Quaternion& q_yaw) {
+    // Game command check specific to free camera's operation
     unsigned int command = g_runtime_global_context.m_input_system->getGameCommand();
+    // If command is invalid, free camera doesn't update its state.
+    // The common updateCameraRenderData() in tick() will use the unchanged state from the previous frame.
     if (command >= (unsigned int)GameCommand::invalid) return;
 
-    std::shared_ptr<Level> current_level = g_runtime_global_context.m_world_manager->getCurrentActiveLevel().lock();
-    std::shared_ptr<Character> current_character = current_level->getCurrentActiveCharacter().lock();
-    if (current_character == nullptr)
-        return;
-
-    Quaternion q_yaw, q_pitch;
-
-    q_yaw.fromAngleAxis(g_runtime_global_context.m_input_system->getCursorDeltaYaw(), Vector3::UNIT_Z);
-    q_pitch.fromAngleAxis(g_runtime_global_context.m_input_system->getCursorDeltaPitch(), m_left);
+    Quaternion q_pitch;
+    q_pitch.fromAngleAxis(Radian(delta_pitch_rad), m_left); // Pitch around camera's local left axis
 
     m_forward = q_yaw * q_pitch * m_forward;
-    m_left = q_yaw * q_pitch * m_left;
-    m_up = m_forward.crossProduct(m_left);
+    m_left    = q_yaw * q_pitch * m_left;
+    m_up      = m_forward.crossProduct(m_left);
 
+    // Movement logic specific to free camera
     bool has_move_command = ((unsigned int)GameCommand::forward | (unsigned int)GameCommand::backward |
                              (unsigned int)GameCommand::left | (unsigned int)GameCommand::right) & command;
     if (has_move_command) {
         Vector3 move_direction = Vector3::ZERO;
-
         if ((unsigned int)GameCommand::forward & command)
             move_direction += m_forward;
-
         if ((unsigned int)GameCommand::backward & command)
             move_direction -= m_forward;
-
         if ((unsigned int)GameCommand::left & command)
             move_direction += m_left;
-
         if ((unsigned int)GameCommand::right & command)
             move_direction -= m_left;
-
-        m_position += move_direction * 2.0f * delta_time;
+        m_position += move_direction * move_speed * delta_time;
     }
-
-    Matrix4x4 desired_mat = Math::makeLookAtMatrix(m_position, m_position + m_forward, m_up);
-
-    RenderSwapContext &swap_context = g_runtime_global_context.m_render_system->getSwapContext();
-    CameraSwapData     camera_swap_data;
-    camera_swap_data.m_camera_type = RenderCameraType::Motor;
-    camera_swap_data.m_view_matrix = desired_mat;
-    swap_context.getLogicSwapData().m_camera_swap_data = camera_swap_data;
 }
 } // namespace Piccolo
