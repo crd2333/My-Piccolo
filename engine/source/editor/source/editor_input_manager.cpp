@@ -21,18 +21,16 @@ void EditorInputManager::initialize() {
     ASSERT(window_system);
 
     // window_system->registerOnResetFunc(std::bind(&EditorInputManager::onReset, this));
-    window_system->registerOnCursorPosFunc(
-                               std::bind(&EditorInputManager::onCursorPos, this, std::placeholders::_1, std::placeholders::_2));
-    window_system->registerOnCursorEnterFunc(
-                               std::bind(&EditorInputManager::onCursorEnter, this, std::placeholders::_1));
-    window_system->registerOnScrollFunc(
-                               std::bind(&EditorInputManager::onScroll, this, std::placeholders::_1, std::placeholders::_2));
-    window_system->registerOnMouseButtonFunc(
-                               std::bind(&EditorInputManager::onMouseButtonClicked, this, std::placeholders::_1, std::placeholders::_2));
-    window_system->registerOnWindowCloseFunc(
-                               std::bind(&EditorInputManager::onWindowClosed, this));
+    window_system->registerOnCursorPosFunc(std::bind(&EditorInputManager::onCursorPos, this,
+                                           std::placeholders::_1, std::placeholders::_2));
+    window_system->registerOnCursorEnterFunc(std::bind(&EditorInputManager::onCursorEnter, this, std::placeholders::_1));
+    window_system->registerOnScrollFunc(std::bind(&EditorInputManager::onScroll, this,
+                                        std::placeholders::_1, std::placeholders::_2));
+    window_system->registerOnMouseButtonFunc(std::bind(&EditorInputManager::onMouseButtonClicked, this,
+                                             std::placeholders::_1, std::placeholders::_2));
+    window_system->registerOnWindowCloseFunc(std::bind(&EditorInputManager::onWindowClosed, this));
     window_system->registerOnKeyFunc(std::bind(&EditorInputManager::onKey, this,
-                                               std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+                                     std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
 }
 
 void EditorInputManager::tick() {
@@ -153,20 +151,27 @@ void EditorInputManager::onCursorPos(double xpos, double ypos) {
     if (!g_is_editor_mode)
         return;
 
+    float velocity = m_camera_speed * 0.1f; // todo: 根据 pivot 调整平移速度
     float angularVelocity = 180.0f / Math::max(m_engine_window_size.x, m_engine_window_size.y); // 180 degrees while moving full screen
     if (m_mouse_x >= 0.0f && m_mouse_y >= 0.0f) {
-        if (g_editor_global_context.m_window_system->isMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT)) {
+        if (g_editor_global_context.m_window_system->isMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT)) { // right mouse button pressed
             glfwSetInputMode(g_editor_global_context.m_window_system->getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             g_editor_global_context.m_scene_manager->getEditorCamera()->rotate(Vector2(ypos - m_mouse_y, xpos - m_mouse_x) * angularVelocity);
-        } else if (g_editor_global_context.m_window_system->isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT)) {
+        } else if (g_editor_global_context.m_window_system->isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT)) { // left mouse button pressed
+            glfwSetInputMode(g_editor_global_context.m_window_system->getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             g_editor_global_context.m_scene_manager->moveEntity(xpos, ypos,
                                                                 m_mouse_x, m_mouse_y,
                                                                 m_engine_window_pos, m_engine_window_size, m_cursor_on_axis,
                                                                 g_editor_global_context.m_scene_manager->getSelectedObjectMatrix());
+        } else if (g_editor_global_context.m_window_system->isMouseButtonDown(GLFW_MOUSE_BUTTON_MIDDLE)) { // middle mouse button pressed
+            glfwSetInputMode(g_editor_global_context.m_window_system->getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            Vector2 delta = Vector2(xpos - m_mouse_x, ypos - m_mouse_y); // movement of cursor
+            std::shared_ptr editor_camera = g_editor_global_context.m_scene_manager->getEditorCamera();
+            Quaternion camera_rotate = editor_camera->rotation().inverse(); // get inverse rotation of camera
+            Vector3 camera_relative_pos = camera_rotate * Vector3(-delta.x * velocity, 0, delta.y * velocity); // convert to camera-relative position
+            editor_camera->move(camera_relative_pos);
+        } else { // no mouse button pressed
             glfwSetInputMode(g_editor_global_context.m_window_system->getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        } else {
-            glfwSetInputMode(g_editor_global_context.m_window_system->getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-
             if (isCursorInRect(m_engine_window_pos, m_engine_window_size)) {
                 Vector2 cursor_uv = Vector2((m_mouse_x - m_engine_window_pos.x) / m_engine_window_size.x,
                                             (m_mouse_y - m_engine_window_pos.y) / m_engine_window_size.y);
@@ -193,7 +198,7 @@ void EditorInputManager::onScroll(double xoffset, double yoffset) {
                 m_camera_speed *= 1.2f;
             else
                 m_camera_speed *= 0.8f;
-        } else {// wheel scrolled up = zoom in by 2 extra degrees
+        } else { // wheel scrolled up = zoom in by 2 extra degrees
             g_editor_global_context.m_scene_manager->getEditorCamera()->zoom((float)yoffset * 2.0f);
         }
     }
