@@ -70,7 +70,8 @@ void RenderResource::uploadGlobalRenderResource(std::shared_ptr<RHI> rhi, LevelR
         brdf_map->m_width,
         brdf_map->m_height,
         brdf_map->m_pixels,
-        brdf_map->m_format);
+        brdf_map->m_format
+    );
 
     // color grading
     std::shared_ptr<TextureData> color_grading_map =
@@ -84,7 +85,9 @@ void RenderResource::uploadGlobalRenderResource(std::shared_ptr<RHI> rhi, LevelR
         color_grading_map->m_width,
         color_grading_map->m_height,
         color_grading_map->m_pixels,
-        color_grading_map->m_format);
+        color_grading_map->m_format,
+        1 // mip_levels set default to 1 for color grading LUT
+    );
 }
 
 void RenderResource::uploadGameObjectRenderResource(std::shared_ptr<RHI> rhi,
@@ -1008,7 +1011,8 @@ void RenderResource::updateTextureImageData(std::shared_ptr<RHI> rhi, const Text
         texture_data.base_color_image_width,
         texture_data.base_color_image_height,
         texture_data.base_color_image_pixels,
-        texture_data.base_color_image_format);
+        texture_data.base_color_image_format
+    );
 
     rhi->createGlobalImage(
         texture_data.now_material->metallic_roughness_texture_image,
@@ -1017,7 +1021,8 @@ void RenderResource::updateTextureImageData(std::shared_ptr<RHI> rhi, const Text
         texture_data.metallic_roughness_image_width,
         texture_data.metallic_roughness_image_height,
         texture_data.metallic_roughness_image_pixels,
-        texture_data.metallic_roughness_image_format);
+        texture_data.metallic_roughness_image_format
+    );
 
     rhi->createGlobalImage(
         texture_data.now_material->normal_texture_image,
@@ -1026,7 +1031,8 @@ void RenderResource::updateTextureImageData(std::shared_ptr<RHI> rhi, const Text
         texture_data.normal_roughness_image_width,
         texture_data.normal_roughness_image_height,
         texture_data.normal_roughness_image_pixels,
-        texture_data.normal_roughness_image_format);
+        texture_data.normal_roughness_image_format
+    );
 
     rhi->createGlobalImage(
         texture_data.now_material->occlusion_texture_image,
@@ -1035,7 +1041,8 @@ void RenderResource::updateTextureImageData(std::shared_ptr<RHI> rhi, const Text
         texture_data.occlusion_image_width,
         texture_data.occlusion_image_height,
         texture_data.occlusion_image_pixels,
-        texture_data.occlusion_image_format);
+        texture_data.occlusion_image_format
+    );
 
     rhi->createGlobalImage(
         texture_data.now_material->emissive_texture_image,
@@ -1044,7 +1051,8 @@ void RenderResource::updateTextureImageData(std::shared_ptr<RHI> rhi, const Text
         texture_data.emissive_image_width,
         texture_data.emissive_image_height,
         texture_data.emissive_image_pixels,
-        texture_data.emissive_image_format);
+        texture_data.emissive_image_format
+    );
 }
 
 VulkanMesh &RenderResource::getEntityMesh(RenderEntity entity) {

@@ -31,6 +31,7 @@ struct EngineContentViewport {
     float height { 0.f};
 };
 
+// render system 是渲染系统的核心类，看代码时以此为入口
 class RenderSystem {
 public:
     RenderSystem() = default;

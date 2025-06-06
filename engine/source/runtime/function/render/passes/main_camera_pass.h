@@ -9,6 +9,9 @@
 #include "runtime/function/render/passes/ui_pass.h"
 #include "runtime/function/render/passes/particle_pass.h"
 
+// passes 文件夹下一些是 render pass，一些是 subpass
+// 像 MainCameraPass 就是一个很大的 render pass，包含了多个 subpass
+
 namespace Piccolo {
 class RenderResourceBase;
 

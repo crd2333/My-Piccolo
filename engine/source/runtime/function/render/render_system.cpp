@@ -92,23 +92,23 @@ void RenderSystem::initialize(RenderSystemInitInfo init_info) {
 }
 
 void RenderSystem::tick(float delta_time) {
-    // process swap data between logic and render contexts
+    // process swap data between logic and render contexts. swap 其实并不准确，因为只是 render 从 logic 单方面拿数据
     processSwapData();
 
-    // prepare render command context
+    // prepare render command context. 图形 API 的准备工作
     m_rhi->prepareContext();
 
-    // update per-frame buffer
+    // update per-frame buffer 每一帧不同 pass 共用的数据
     m_render_resource->updatePerFrameBuffer(m_render_scene, m_render_camera);
 
     // update per-frame visible objects
     m_render_scene->updateVisibleObjects(std::static_pointer_cast<RenderResource>(m_render_resource),
                                          m_render_camera);
 
-    // prepare pipeline's render passes data
+    // prepare pipeline's render passes data. 每个 pass 需要的数据
     m_render_pipeline->preparePassData(m_render_resource);
 
-    g_runtime_global_context.m_debugdraw_manager->tick(delta_time);
+    g_runtime_global_context.m_debugdraw_manager->tick(delta_time); // tick 一下 debug draw manager
 
     // render one frame
     if (m_render_pipeline_type == RENDER_PIPELINE_TYPE::FORWARD_PIPELINE)

@@ -628,7 +628,6 @@ void ParticlePass::createEmitter(int id, const ParticleEmitterDesc &desc) {
 
     // fill in data
     {
-
         m_rhi->createBufferAndInitialize(RHI_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                          RHI_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                          RHI_MEMORY_PROPERTY_HOST_COHERENT_BIT,

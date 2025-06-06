@@ -73,13 +73,13 @@ struct EmitterTransformRequest {
 };
 
 struct RenderSwapData {
-    std::optional<LevelResourceDesc>       m_level_resource_desc;
-    std::optional<GameObjectResourceDesc>  m_game_object_resource_desc;
-    std::optional<GameObjectResourceDesc>  m_game_object_to_delete;
-    std::optional<CameraSwapData>          m_camera_swap_data;
-    std::optional<ParticleSubmitRequest>   m_particle_submit_request;
-    std::optional<EmitterTickRequest>      m_emitter_tick_request;
-    std::optional<EmitterTransformRequest> m_emitter_transform_request;
+    std::optional<LevelResourceDesc>       m_level_resource_desc;       // IBL (e.g. skybox) 和 color grading 贴图
+    std::optional<GameObjectResourceDesc>  m_game_object_resource_desc; // 新增或更新的游戏对象
+    std::optional<GameObjectResourceDesc>  m_game_object_to_delete;     // 待删除的游戏对象
+    std::optional<CameraSwapData>          m_camera_swap_data;          // 相机参数更新
+    std::optional<ParticleSubmitRequest>   m_particle_submit_request;   // 创建新的粒子发射器
+    std::optional<EmitterTickRequest>      m_emitter_tick_request;      // 需要 tick 的粒子发射器
+    std::optional<EmitterTransformRequest> m_emitter_transform_request; // 粒子发射器位置更新
 
     void addDirtyGameObject(GameObjectDesc&& desc);
     void addDeleteGameObject(GameObjectDesc&& desc);

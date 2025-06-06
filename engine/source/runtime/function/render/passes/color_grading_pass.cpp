@@ -8,12 +8,15 @@
 
 #include <stdexcept>
 
+// 以 color grading pass 为例，展示 MainCameraPass 的子 pass 的典型实现
+
 namespace Piccolo {
 void ColorGradingPass::initialize(const RenderPassInitInfo* init_info) {
+    // 作为 MainCameraPass 的子 pass 的典型初始化步骤为：先 initialize 父类，再填充 init_info，然后调 4 个函数进行具体初始化操作
     RenderPass::initialize(nullptr);
 
     const ColorGradingPassInitInfo* _init_info = static_cast<const ColorGradingPassInitInfo*>(init_info);
-    m_framebuffer.render_pass                  = _init_info->render_pass;
+    m_framebuffer.render_pass                  = _init_info->render_pass; // 会在这里拿到 color grading lut 贴图
 
     setupDescriptorSetLayout();
     setupPipelines();
@@ -21,20 +24,21 @@ void ColorGradingPass::initialize(const RenderPassInitInfo* init_info) {
     updateAfterFramebufferRecreate(_init_info->input_attachment);
 }
 
+// 设置 shader 使用的描述符布局，如输入输出资源的排布和用到的纹理
 void ColorGradingPass::setupDescriptorSetLayout() {
     m_descriptor_infos.resize(1);
 
+    // 这里用到两个 descriptor set layout，一个是 tone_mapping 的输出，现在 color_grading 的输入；一个是 color grading 所用的纹理
     RHIDescriptorSetLayoutBinding post_process_global_layout_bindings[2] = {};
 
-    RHIDescriptorSetLayoutBinding &post_process_global_layout_input_attachment_binding =
-        post_process_global_layout_bindings[0];
+    RHIDescriptorSetLayoutBinding &post_process_global_layout_input_attachment_binding = post_process_global_layout_bindings[0];
     post_process_global_layout_input_attachment_binding.binding         = 0;
     post_process_global_layout_input_attachment_binding.descriptorType  = RHI_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
     post_process_global_layout_input_attachment_binding.descriptorCount = 1;
     post_process_global_layout_input_attachment_binding.stageFlags      = RHI_SHADER_STAGE_FRAGMENT_BIT;
 
     RHIDescriptorSetLayoutBinding &post_process_global_layout_LUT_binding = post_process_global_layout_bindings[1];
-    post_process_global_layout_LUT_binding.binding                       = 1;
+    post_process_global_layout_LUT_binding.binding         = 1;
     post_process_global_layout_LUT_binding.descriptorType  = RHI_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     post_process_global_layout_LUT_binding.descriptorCount = 1;
     post_process_global_layout_LUT_binding.stageFlags      = RHI_SHADER_STAGE_FRAGMENT_BIT;
@@ -43,14 +47,14 @@ void ColorGradingPass::setupDescriptorSetLayout() {
     post_process_global_layout_create_info.sType = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     post_process_global_layout_create_info.pNext = NULL;
     post_process_global_layout_create_info.flags = 0;
-    post_process_global_layout_create_info.bindingCount =
-        sizeof(post_process_global_layout_bindings) / sizeof(post_process_global_layout_bindings[0]);
+    post_process_global_layout_create_info.bindingCount = sizeof(post_process_global_layout_bindings) / sizeof(post_process_global_layout_bindings[0]);
     post_process_global_layout_create_info.pBindings = post_process_global_layout_bindings;
 
     if (RHI_SUCCESS != m_rhi->createDescriptorSetLayout(&post_process_global_layout_create_info, m_descriptor_infos[0].layout))
         throw std::runtime_error("create post process global layout");
 }
 
+// 设置 graphics pipeline 的相关信息，包括 shader 模块、顶点输入状态、输入装配状态、视口状态、光栅化状态、多重采样状态、颜色混合状态、深度模板状态等
 void ColorGradingPass::setupPipelines() {
     m_render_pipelines.resize(1);
 
@@ -63,7 +67,7 @@ void ColorGradingPass::setupPipelines() {
     if (m_rhi->createPipelineLayout(&pipeline_layout_create_info, m_render_pipelines[0].layout) != RHI_SUCCESS)
         throw std::runtime_error("create post process pipeline layout");
 
-    RHIShader* vert_shader_module = m_rhi->createShaderModule(POST_PROCESS_VERT);
+    RHIShader* vert_shader_module = m_rhi->createShaderModule(POST_PROCESS_VERT); // 覆盖全屏的顶点着色器
     RHIShader* frag_shader_module = m_rhi->createShaderModule(COLOR_GRADING_FRAG);
 
     RHIPipelineShaderStageCreateInfo vert_pipeline_shader_stage_create_info {};
@@ -180,11 +184,12 @@ void ColorGradingPass::setupPipelines() {
     m_rhi->destroyShaderModule(frag_shader_module);
 }
 
+// 设置描述符集，绑定输入附件和 color grading LUT 贴图
 void ColorGradingPass::setupDescriptorSet() {
     RHIDescriptorSetAllocateInfo post_process_global_descriptor_set_alloc_info;
-    post_process_global_descriptor_set_alloc_info.sType          = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    post_process_global_descriptor_set_alloc_info.pNext          = NULL;
-    post_process_global_descriptor_set_alloc_info.descriptorPool = m_rhi->getDescriptorPool();
+    post_process_global_descriptor_set_alloc_info.sType              = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    post_process_global_descriptor_set_alloc_info.pNext              = NULL;
+    post_process_global_descriptor_set_alloc_info.descriptorPool     = m_rhi->getDescriptorPool();
     post_process_global_descriptor_set_alloc_info.descriptorSetCount = 1;
     post_process_global_descriptor_set_alloc_info.pSetLayouts        = &m_descriptor_infos[0].layout;
 
@@ -192,10 +197,10 @@ void ColorGradingPass::setupDescriptorSet() {
         throw std::runtime_error("allocate post process global descriptor set");
 }
 
+// 当窗口大小改变时，重新创建帧缓冲和描述符集
 void ColorGradingPass::updateAfterFramebufferRecreate(RHIImageView* input_attachment) {
     RHIDescriptorImageInfo post_process_per_frame_input_attachment_info = {};
-    post_process_per_frame_input_attachment_info.sampler =
-        m_rhi->getOrCreateDefaultSampler(Default_Sampler_Nearest);
+    post_process_per_frame_input_attachment_info.sampler = m_rhi->getOrCreateDefaultSampler(Default_Sampler_Nearest);
     post_process_per_frame_input_attachment_info.imageView   = input_attachment;
     post_process_per_frame_input_attachment_info.imageLayout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
@@ -235,6 +240,7 @@ void ColorGradingPass::updateAfterFramebufferRecreate(RHIImageView* input_attach
                                 NULL);
 }
 
+// 提交预先准备好的 command buffer，会在 MainCameraPass 的 draw() 函数中被调用
 void ColorGradingPass::draw() {
     float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
     m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Color Grading", color);

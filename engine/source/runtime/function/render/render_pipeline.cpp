@@ -108,7 +108,6 @@ void RenderPipeline::initialize(RenderPipelineInitInfo init_info) {
     fxaa_init_info.input_attachment =
         _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd];
     m_fxaa_pass->initialize(&fxaa_init_info);
-
 }
 
 void RenderPipeline::forwardRender(std::shared_ptr<RHI> rhi, std::shared_ptr<RenderResourceBase> render_resource) {
@@ -121,8 +120,7 @@ void RenderPipeline::forwardRender(std::shared_ptr<RHI> rhi, std::shared_ptr<Ren
 
     vulkan_rhi->resetCommandPool();
 
-    bool recreate_swapchain =
-        vulkan_rhi->prepareBeforePass(std::bind(&RenderPipeline::passUpdateAfterRecreateSwapchain, this));
+    bool recreate_swapchain = vulkan_rhi->prepareBeforePass(std::bind(&RenderPipeline::passUpdateAfterRecreateSwapchain, this));
     if (recreate_swapchain)
         return;
 
@@ -137,19 +135,16 @@ void RenderPipeline::forwardRender(std::shared_ptr<RHI> rhi, std::shared_ptr<Ren
     CombineUIPass    &combine_ui_pass    = *(static_cast<CombineUIPass*>(m_combine_ui_pass.get()));
     ParticlePass     &particle_pass      = *(static_cast<ParticlePass*>(m_particle_pass.get()));
 
-    static_cast<ParticlePass*>(m_particle_pass.get())
-    ->setRenderCommandBufferHandle(
+    static_cast<ParticlePass*>(m_particle_pass.get())->setRenderCommandBufferHandle(
         static_cast<MainCameraPass*>(m_main_camera_pass.get())->getRenderCommandBuffer());
 
-    static_cast<MainCameraPass*>(m_main_camera_pass.get())
-    ->drawForward(color_grading_pass,
-                  fxaa_pass,
-                  tone_mapping_pass,
-                  ui_pass,
-                  combine_ui_pass,
-                  particle_pass,
-                  vulkan_rhi->m_current_swapchain_image_index);
-
+    static_cast<MainCameraPass*>(m_main_camera_pass.get())->drawForward(color_grading_pass,
+                                                                        fxaa_pass,
+                                                                        tone_mapping_pass,
+                                                                        ui_pass,
+                                                                        combine_ui_pass,
+                                                                        particle_pass,
+                                                                        vulkan_rhi->m_current_swapchain_image_index);
 
     g_runtime_global_context.m_debugdraw_manager->draw(vulkan_rhi->m_current_swapchain_image_index);
 
@@ -184,18 +179,16 @@ void RenderPipeline::deferredRender(std::shared_ptr<RHI> rhi, std::shared_ptr<Re
     CombineUIPass    &combine_ui_pass    = *(static_cast<CombineUIPass*>(m_combine_ui_pass.get()));
     ParticlePass     &particle_pass      = *(static_cast<ParticlePass*>(m_particle_pass.get()));
 
-    static_cast<ParticlePass*>(m_particle_pass.get())
-    ->setRenderCommandBufferHandle(
+    static_cast<ParticlePass*>(m_particle_pass.get())->setRenderCommandBufferHandle(
         static_cast<MainCameraPass*>(m_main_camera_pass.get())->getRenderCommandBuffer());
 
-    static_cast<MainCameraPass*>(m_main_camera_pass.get())
-    ->draw(color_grading_pass,
-           fxaa_pass,
-           tone_mapping_pass,
-           ui_pass,
-           combine_ui_pass,
-           particle_pass,
-           vulkan_rhi->m_current_swapchain_image_index);
+    static_cast<MainCameraPass*>(m_main_camera_pass.get())->draw(color_grading_pass,
+                                                                 fxaa_pass,
+                                                                 tone_mapping_pass,
+                                                                 ui_pass,
+                                                                 combine_ui_pass,
+                                                                 particle_pass,
+                                                                 vulkan_rhi->m_current_swapchain_image_index);
 
     g_runtime_global_context.m_debugdraw_manager->draw(vulkan_rhi->m_current_swapchain_image_index);
 
@@ -215,18 +208,19 @@ void RenderPipeline::passUpdateAfterRecreateSwapchain() {
 
     main_camera_pass.updateAfterFramebufferRecreate();
     tone_mapping_pass.updateAfterFramebufferRecreate(
-                         main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd]);
+                    main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd]);
     color_grading_pass.updateAfterFramebufferRecreate(
-                          main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_even]);
+                    main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_even]);
     fxaa_pass.updateAfterFramebufferRecreate(
                  main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd]);
     combine_ui_pass.updateAfterFramebufferRecreate(
-                       main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd],
-                       main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_even]);
+                    main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd],
+                    main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_even]);
     pick_pass.recreateFramebuffer();
     particle_pass.updateAfterFramebufferRecreate();
     g_runtime_global_context.m_debugdraw_manager->updateAfterRecreateSwapchain();
 }
+
 uint32_t RenderPipeline::getGuidOfPickedMesh(const Vector2 &picked_uv) {
     PickPass &pick_pass = *(static_cast<PickPass*>(m_pick_pass.get()));
     return pick_pass.pick(picked_uv);

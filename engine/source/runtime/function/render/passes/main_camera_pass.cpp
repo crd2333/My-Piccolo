@@ -1843,6 +1843,7 @@ void MainCameraPass::updateAfterFramebufferRecreate() {
     setupParticlePass();
 }
 
+// main camera pass draw function for deferred rendering
 void MainCameraPass::draw(ColorGradingPass &color_grading_pass,
                           FXAAPass         &fxaa_pass,
                           ToneMappingPass  &tone_mapping_pass,
@@ -1877,7 +1878,7 @@ void MainCameraPass::draw(ColorGradingPass &color_grading_pass,
     float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
     m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "BasePass", color);
 
-    drawMeshGbuffer();
+    drawMeshGbuffer(); // 首先绘制 GBuffer
 
     m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
 
@@ -1943,6 +1944,7 @@ void MainCameraPass::draw(ColorGradingPass &color_grading_pass,
     m_rhi->cmdEndRenderPassPFN(m_rhi->getCurrentCommandBuffer());
 }
 
+// main camera pass draw function for forward rendering
 void MainCameraPass::drawForward(ColorGradingPass &color_grading_pass,
                                  FXAAPass         &fxaa_pass,
                                  ToneMappingPass  &tone_mapping_pass,
@@ -2041,7 +2043,7 @@ void MainCameraPass::drawMeshGbuffer() {
     std::map<VulkanPBRMaterial*, std::map<VulkanMesh*, std::vector<MeshNode>>> main_camera_mesh_drawcall_batch;
 
     // reorganize mesh
-    for (RenderMeshNode &node : * (m_visible_nodes.p_main_camera_visible_mesh_nodes)) {
+    for (RenderMeshNode &node : *(m_visible_nodes.p_main_camera_visible_mesh_nodes)) {
         auto &mesh_instanced = main_camera_mesh_drawcall_batch[node.ref_material];
         auto &mesh_nodes     = mesh_instanced[node.ref_mesh];
 
@@ -2298,7 +2300,7 @@ void MainCameraPass::drawMeshLighting() {
     std::map<VulkanPBRMaterial*, std::map<VulkanMesh*, std::vector<MeshNode>>> main_camera_mesh_drawcall_batch;
 
     // reorganize mesh
-    for (RenderMeshNode &node : * (m_visible_nodes.p_main_camera_visible_mesh_nodes)) {
+    for (RenderMeshNode &node : *(m_visible_nodes.p_main_camera_visible_mesh_nodes)) {
         auto &mesh_instanced = main_camera_mesh_drawcall_batch[node.ref_material];
         auto &mesh_nodes     = mesh_instanced[node.ref_mesh];
 
@@ -2582,11 +2584,11 @@ void MainCameraPass::drawAxis() {
     m_axis_storage_buffer_object.selected_axis = m_selected_axis;
     m_axis_storage_buffer_object.model_matrix  = m_visible_nodes.p_axis_node->model_matrix;
 
-    RHIBuffer*     vertex_buffers[3] = {m_visible_nodes.p_axis_node->ref_mesh->mesh_vertex_position_buffer,
-                                        m_visible_nodes.p_axis_node->ref_mesh->mesh_vertex_varying_enable_blending_buffer,
-                                        m_visible_nodes.p_axis_node->ref_mesh->mesh_vertex_varying_buffer
-                                       };
-    RHIDeviceSize offsets[3]        = {0, 0, 0};
+    RHIBuffer* vertex_buffers[3] = {m_visible_nodes.p_axis_node->ref_mesh->mesh_vertex_position_buffer,
+                                    m_visible_nodes.p_axis_node->ref_mesh->mesh_vertex_varying_enable_blending_buffer,
+                                    m_visible_nodes.p_axis_node->ref_mesh->mesh_vertex_varying_buffer
+                                    };
+    RHIDeviceSize offsets[3] = {0, 0, 0};
     m_rhi->cmdBindVertexBuffersPFN(m_rhi->getCurrentCommandBuffer(),
                                    0,
                                    (sizeof(vertex_buffers) / sizeof(vertex_buffers[0])),
