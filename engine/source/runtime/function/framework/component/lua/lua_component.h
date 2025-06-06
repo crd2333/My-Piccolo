@@ -21,9 +21,15 @@ public:
     static T get(std::weak_ptr<GObject> game_object, const char* name);
 
     static void invoke(std::weak_ptr<GObject> game_object, const char* name);
+
 protected:
     sol::state m_lua_state;
     META(Enable)
     std::string m_lua_script;
+
+private:
+    void loadLuaScript();
+    bool isLuaFilePath(const std::string& script) const;
+    std::string loadLuaScriptFromFile(const std::string& file_path);
 };
 } // namespace Piccolo

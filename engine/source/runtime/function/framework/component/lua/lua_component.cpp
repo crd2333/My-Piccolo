@@ -1,3 +1,7 @@
+#include <filesystem>
+
+#include "runtime/resource/asset_manager/asset_manager.h"
+
 #include "runtime/function/framework/component/lua/lua_component.h"
 #include "runtime/core/base/macro.h"
 #include "runtime/function/framework/object/object.h"
@@ -42,7 +46,7 @@ bool find_component_field(std::weak_ptr<GObject>     game_object,
 
 template<typename T>
 void LuaComponent::set(std::weak_ptr<GObject> game_object, const char* name, T value) {
-    LOG_INFO(name);
+    // LOG_INFO(name);
     Reflection::FieldAccessor field_accessor;
     void*                     target_instance;
     if (find_component_field(game_object, name, field_accessor, target_instance))
@@ -53,8 +57,7 @@ void LuaComponent::set(std::weak_ptr<GObject> game_object, const char* name, T v
 
 template<typename T>
 T LuaComponent::get(std::weak_ptr<GObject> game_object, const char* name) {
-
-    LOG_INFO(name);
+    // LOG_INFO(name);
 
     Reflection::FieldAccessor field_accessor;
     void*                     target_instance;
@@ -65,7 +68,7 @@ T LuaComponent::get(std::weak_ptr<GObject> game_object, const char* name) {
 }
 
 void LuaComponent::invoke(std::weak_ptr<GObject> game_object, const char* name) {
-    LOG_INFO(name);
+    // LOG_INFO(name);
 
     Reflection::TypeMeta meta;
     void*                target_instance = nullptr;
@@ -73,9 +76,9 @@ void LuaComponent::invoke(std::weak_ptr<GObject> game_object, const char* name) 
 
     // get target instance and meta
     std::string target_name(name);
-    size_t      pos = target_name.find_last_of('.');
-    method_name     = target_name.substr(pos + 1, target_name.size());
-    target_name     = target_name.substr(0, pos);
+    size_t  pos = target_name.find_last_of('.');
+    method_name = target_name.substr(pos + 1, target_name.size());
+    target_name = target_name.substr(0, pos);
 
     if (target_name.find_first_of('.') == target_name.npos) { // target is a component
         auto components = game_object.lock()->getComponents();
@@ -118,11 +121,85 @@ void LuaComponent::postLoadResource(std::weak_ptr<GObject> parent_object) {
     m_lua_state.set_function("get_bool", &LuaComponent::get<bool>);
     m_lua_state.set_function("invoke", &LuaComponent::invoke);
     m_lua_state["GameObject"] = m_parent_object;
+
+    loadLuaScript(); // load lua script from file or string
 }
 
 void LuaComponent::tick(float delta_time) {
     // LOG_INFO(m_lua_script);
     m_lua_state.script(m_lua_script);
+}
+
+void LuaComponent::loadLuaScript() {
+    if (m_lua_script.empty()) {
+        LOG_WARN("Lua script is empty");
+        return;
+    }
+
+    if (isLuaFilePath(m_lua_script)) {
+        // 是文件路径，尝试加载文件
+        std::string script_content = loadLuaScriptFromFile(m_lua_script);
+        if (!script_content.empty()) {
+            m_lua_script = script_content;
+            LOG_INFO("Loaded Lua script from file:\n{}", m_lua_script);
+        } else
+            LOG_ERROR("Failed to load Lua script from file:\n{}", m_lua_script);
+    }
+    // 如果不是文件路径，则直接使用 m_lua_script 作为硬编码脚本
+}
+
+bool LuaComponent::isLuaFilePath(const std::string& script) const {
+    // 1. 以 .lua 结尾
+    if (script.size() > 4 && script.substr(script.size() - 4) == ".lua") {
+        return true;
+    }
+
+    // 2. 包含路径分隔符但不包含 Lua 关键字
+    if ((script.find('/') != std::string::npos || script.find('\\') != std::string::npos) &&
+        script.find("function") == std::string::npos &&
+        script.find("local") == std::string::npos &&
+        script.find("print") == std::string::npos) {
+        return true;
+    }
+
+    // 3. 为不包含 Lua 语法字符的简短文件名
+    if (script.find('\n') == std::string::npos &&
+        script.find(';') == std::string::npos &&
+        script.find('(') == std::string::npos &&
+        script.find('{') == std::string::npos &&
+        script.length() < 256) {
+        return true;
+    }
+
+    return false;
+}
+
+std::string LuaComponent::loadLuaScriptFromFile(const std::string& file_path) {
+    std::shared_ptr<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
+    ASSERT(asset_manager);
+
+    try {
+        std::filesystem::path full_path = asset_manager->getFullPath(file_path);
+
+        if (!std::filesystem::exists(full_path)) {
+            LOG_ERROR("Lua script file does not exist: {}", full_path.string());
+            return "";
+        }
+        std::ifstream file(full_path);
+        if (!file.is_open()) {
+            LOG_ERROR("Failed to open Lua script file: {}", full_path.string());
+            return "";
+        }
+
+        std::string content((std::istreambuf_iterator<char>(file)),
+                           std::istreambuf_iterator<char>());
+        file.close();
+
+        return content;
+    } catch (const std::exception& e) {
+        LOG_ERROR("Exception while loading Lua script file {}: {}", file_path, e.what());
+        return "";
+    }
 }
 
 } // namespace Piccolo
