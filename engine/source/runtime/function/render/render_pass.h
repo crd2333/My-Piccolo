@@ -35,10 +35,11 @@ enum {
     _main_camera_subpass_forward_lighting  = 2,
     _main_camera_subpass_tone_mapping      = 3,
     _main_camera_subpass_color_grading     = 4,
-    _main_camera_subpass_fxaa              = 5,
-    _main_camera_subpass_ui                = 6,
-    _main_camera_subpass_combine_ui        = 7,
-    _main_camera_subpass_count             = 8, // 最后一个 enum 用于计数
+    _main_camera_subpass_vignette          = 5,
+    _main_camera_subpass_fxaa              = 6,
+    _main_camera_subpass_ui                = 7,
+    _main_camera_subpass_combine_ui        = 8,
+    _main_camera_subpass_count             = 9, // 最后一个 enum 用于计数
 };
 
 struct VisibleNodes {

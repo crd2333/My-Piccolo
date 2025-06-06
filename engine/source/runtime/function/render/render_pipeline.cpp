@@ -2,6 +2,7 @@
 #include "runtime/function/render/interface/vulkan/vulkan_rhi.h"
 
 #include "runtime/function/render/passes/color_grading_pass.h"
+#include "runtime/function/render/passes/vignette_pass.h"
 #include "runtime/function/render/passes/combine_ui_pass.h"
 #include "runtime/function/render/passes/directional_light_pass.h"
 #include "runtime/function/render/passes/main_camera_pass.h"
@@ -22,6 +23,7 @@ void RenderPipeline::initialize(RenderPipelineInitInfo init_info) {
     m_main_camera_pass        = std::make_shared<MainCameraPass>();
     m_tone_mapping_pass       = std::make_shared<ToneMappingPass>();
     m_color_grading_pass      = std::make_shared<ColorGradingPass>();
+    m_vignette_pass           = std::make_shared<VignettePass>();
     m_ui_pass                 = std::make_shared<UIPass>();
     m_combine_ui_pass         = std::make_shared<CombineUIPass>();
     m_pick_pass               = std::make_shared<PickPass>();
@@ -37,6 +39,7 @@ void RenderPipeline::initialize(RenderPipelineInitInfo init_info) {
     m_main_camera_pass->setCommonInfo(pass_common_info);
     m_tone_mapping_pass->setCommonInfo(pass_common_info);
     m_color_grading_pass->setCommonInfo(pass_common_info);
+    m_vignette_pass->setCommonInfo(pass_common_info);
     m_ui_pass->setCommonInfo(pass_common_info);
     m_combine_ui_pass->setCommonInfo(pass_common_info);
     m_pick_pass->setCommonInfo(pass_common_info);
@@ -67,10 +70,10 @@ void RenderPipeline::initialize(RenderPipelineInitInfo init_info) {
     std::static_pointer_cast<ParticlePass>(m_particle_pass)->setupParticlePass();
 
     std::vector<RHIDescriptorSetLayout*> descriptor_layouts = _main_camera_pass->getDescriptorSetLayouts();
-    std::static_pointer_cast<PointLightShadowPass>(m_point_light_shadow_pass)
-    ->setPerMeshLayout(descriptor_layouts[MainCameraPass::LayoutType::_per_mesh]);
-    std::static_pointer_cast<DirectionalLightShadowPass>(m_directional_light_pass)
-    ->setPerMeshLayout(descriptor_layouts[MainCameraPass::LayoutType::_per_mesh]);
+    std::static_pointer_cast<PointLightShadowPass>(m_point_light_shadow_pass)->setPerMeshLayout(
+        descriptor_layouts[MainCameraPass::LayoutType::_per_mesh]);
+    std::static_pointer_cast<DirectionalLightShadowPass>(m_directional_light_pass)->setPerMeshLayout(
+        descriptor_layouts[MainCameraPass::LayoutType::_per_mesh]);
 
     m_point_light_shadow_pass->postInitialize();
     m_directional_light_pass->postInitialize();
@@ -87,6 +90,12 @@ void RenderPipeline::initialize(RenderPipelineInitInfo init_info) {
         _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_even];
     m_color_grading_pass->initialize(&color_grading_init_info);
 
+    VignettePassInitInfo vignette_init_info;
+    vignette_init_info.render_pass = _main_camera_pass->getRenderPass();
+    vignette_init_info.input_attachment =
+        _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd];
+    m_vignette_pass->initialize(&vignette_init_info);
+
     UIPassInitInfo ui_init_info;
     ui_init_info.render_pass = _main_camera_pass->getRenderPass();
     m_ui_pass->initialize(&ui_init_info);
@@ -94,9 +103,9 @@ void RenderPipeline::initialize(RenderPipelineInitInfo init_info) {
     CombineUIPassInitInfo combine_ui_init_info;
     combine_ui_init_info.render_pass = _main_camera_pass->getRenderPass();
     combine_ui_init_info.scene_input_attachment =
-        _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd];
-    combine_ui_init_info.ui_input_attachment =
         _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_even];
+    combine_ui_init_info.ui_input_attachment =
+        _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd];
     m_combine_ui_pass->initialize(&combine_ui_init_info);
 
     PickPassInitInfo pick_init_info;
@@ -106,7 +115,7 @@ void RenderPipeline::initialize(RenderPipelineInitInfo init_info) {
     FXAAPassInitInfo fxaa_init_info;
     fxaa_init_info.render_pass = _main_camera_pass->getRenderPass();
     fxaa_init_info.input_attachment =
-        _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd];
+        _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_post_process_buffer_even];
     m_fxaa_pass->initialize(&fxaa_init_info);
 }
 
@@ -129,6 +138,7 @@ void RenderPipeline::forwardRender(std::shared_ptr<RHI> rhi, std::shared_ptr<Ren
     static_cast<PointLightShadowPass*>(m_point_light_shadow_pass.get())->draw();
 
     ColorGradingPass &color_grading_pass = *(static_cast<ColorGradingPass*>(m_color_grading_pass.get()));
+    VignettePass     &vignette_pass      = *(static_cast<VignettePass*>(m_vignette_pass.get()));
     FXAAPass         &fxaa_pass          = *(static_cast<FXAAPass*>(m_fxaa_pass.get()));
     ToneMappingPass  &tone_mapping_pass  = *(static_cast<ToneMappingPass*>(m_tone_mapping_pass.get()));
     UIPass           &ui_pass            = *(static_cast<UIPass*>(m_ui_pass.get()));
@@ -139,6 +149,7 @@ void RenderPipeline::forwardRender(std::shared_ptr<RHI> rhi, std::shared_ptr<Ren
         static_cast<MainCameraPass*>(m_main_camera_pass.get())->getRenderCommandBuffer());
 
     static_cast<MainCameraPass*>(m_main_camera_pass.get())->drawForward(color_grading_pass,
+                                                                        vignette_pass,
                                                                         fxaa_pass,
                                                                         tone_mapping_pass,
                                                                         ui_pass,
@@ -173,6 +184,7 @@ void RenderPipeline::deferredRender(std::shared_ptr<RHI> rhi, std::shared_ptr<Re
     static_cast<PointLightShadowPass*>(m_point_light_shadow_pass.get())->draw();
 
     ColorGradingPass &color_grading_pass = *(static_cast<ColorGradingPass*>(m_color_grading_pass.get()));
+    VignettePass     &vignette_pass      = *(static_cast<VignettePass*>(m_vignette_pass.get()));
     FXAAPass         &fxaa_pass          = *(static_cast<FXAAPass*>(m_fxaa_pass.get()));
     ToneMappingPass  &tone_mapping_pass  = *(static_cast<ToneMappingPass*>(m_tone_mapping_pass.get()));
     UIPass           &ui_pass            = *(static_cast<UIPass*>(m_ui_pass.get()));
@@ -183,6 +195,7 @@ void RenderPipeline::deferredRender(std::shared_ptr<RHI> rhi, std::shared_ptr<Re
         static_cast<MainCameraPass*>(m_main_camera_pass.get())->getRenderCommandBuffer());
 
     static_cast<MainCameraPass*>(m_main_camera_pass.get())->draw(color_grading_pass,
+                                                                 vignette_pass,
                                                                  fxaa_pass,
                                                                  tone_mapping_pass,
                                                                  ui_pass,
@@ -200,6 +213,7 @@ void RenderPipeline::deferredRender(std::shared_ptr<RHI> rhi, std::shared_ptr<Re
 void RenderPipeline::passUpdateAfterRecreateSwapchain() {
     MainCameraPass   &main_camera_pass   = *(static_cast<MainCameraPass*>(m_main_camera_pass.get()));
     ColorGradingPass &color_grading_pass = *(static_cast<ColorGradingPass*>(m_color_grading_pass.get()));
+    VignettePass     &vignette_pass      = *(static_cast<VignettePass*>(m_vignette_pass.get()));
     FXAAPass         &fxaa_pass          = *(static_cast<FXAAPass*>(m_fxaa_pass.get()));
     ToneMappingPass  &tone_mapping_pass  = *(static_cast<ToneMappingPass*>(m_tone_mapping_pass.get()));
     CombineUIPass    &combine_ui_pass    = *(static_cast<CombineUIPass*>(m_combine_ui_pass.get()));
@@ -211,11 +225,13 @@ void RenderPipeline::passUpdateAfterRecreateSwapchain() {
                     main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd]);
     color_grading_pass.updateAfterFramebufferRecreate(
                     main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_even]);
+    vignette_pass.updateAfterFramebufferRecreate(
+                    main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd]);
     fxaa_pass.updateAfterFramebufferRecreate(
-                 main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd]);
+                    main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_even]);
     combine_ui_pass.updateAfterFramebufferRecreate(
-                    main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd],
-                    main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_even]);
+                    main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_even],
+                    main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd]);
     pick_pass.recreateFramebuffer();
     particle_pass.updateAfterFramebufferRecreate();
     g_runtime_global_context.m_debugdraw_manager->updateAfterRecreateSwapchain();

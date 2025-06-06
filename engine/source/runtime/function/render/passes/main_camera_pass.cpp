@@ -271,12 +271,12 @@ void MainCameraPass::setupRenderPass() {
     deferred_lighting_pass_color_attachment_reference[0].layout = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     RHISubpassDescription &deferred_lighting_pass = subpasses[_main_camera_subpass_deferred_lighting];
-    deferred_lighting_pass.pipelineBindPoint     = RHI_PIPELINE_BIND_POINT_GRAPHICS;
-    deferred_lighting_pass.inputAttachmentCount  = sizeof(deferred_lighting_pass_input_attachments_reference) /
-                          sizeof(deferred_lighting_pass_input_attachments_reference[0]);
+    deferred_lighting_pass.pipelineBindPoint    = RHI_PIPELINE_BIND_POINT_GRAPHICS;
+    deferred_lighting_pass.inputAttachmentCount = sizeof(deferred_lighting_pass_input_attachments_reference) /
+                                                  sizeof(deferred_lighting_pass_input_attachments_reference[0]);
     deferred_lighting_pass.pInputAttachments    = &deferred_lighting_pass_input_attachments_reference[0];
     deferred_lighting_pass.colorAttachmentCount = sizeof(deferred_lighting_pass_color_attachment_reference) /
-                          sizeof(deferred_lighting_pass_color_attachment_reference[0]);
+                                                  sizeof(deferred_lighting_pass_color_attachment_reference[0]);
     deferred_lighting_pass.pColorAttachments       = &deferred_lighting_pass_color_attachment_reference[0];
     deferred_lighting_pass.pDepthStencilAttachment = NULL;
     deferred_lighting_pass.preserveAttachmentCount = 0;
@@ -296,20 +296,18 @@ void MainCameraPass::setupRenderPass() {
     forward_lighting_pass.inputAttachmentCount  = 0U;
     forward_lighting_pass.pInputAttachments     = NULL;
     forward_lighting_pass.colorAttachmentCount  = sizeof(forward_lighting_pass_color_attachments_reference) /
-                         sizeof(forward_lighting_pass_color_attachments_reference[0]);
+                                                  sizeof(forward_lighting_pass_color_attachments_reference[0]);
     forward_lighting_pass.pColorAttachments       = &forward_lighting_pass_color_attachments_reference[0];
     forward_lighting_pass.pDepthStencilAttachment = &forward_lighting_pass_depth_attachment_reference;
     forward_lighting_pass.preserveAttachmentCount = 0;
     forward_lighting_pass.pPreserveAttachments    = NULL;
 
     RHIAttachmentReference tone_mapping_pass_input_attachment_reference {};
-    tone_mapping_pass_input_attachment_reference.attachment =
-        &backup_odd_color_attachment_description - attachments;
+    tone_mapping_pass_input_attachment_reference.attachment = &backup_odd_color_attachment_description - attachments;
     tone_mapping_pass_input_attachment_reference.layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     RHIAttachmentReference tone_mapping_pass_color_attachment_reference {};
-    tone_mapping_pass_color_attachment_reference.attachment =
-        &backup_even_color_attachment_description - attachments;
+    tone_mapping_pass_color_attachment_reference.attachment = &backup_even_color_attachment_description - attachments;
     tone_mapping_pass_color_attachment_reference.layout = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     RHISubpassDescription &tone_mapping_pass   = subpasses[_main_camera_subpass_tone_mapping];
@@ -323,18 +321,14 @@ void MainCameraPass::setupRenderPass() {
     tone_mapping_pass.pPreserveAttachments    = NULL;
 
     RHIAttachmentReference color_grading_pass_input_attachment_reference {};
-    color_grading_pass_input_attachment_reference.attachment =
-        &backup_even_color_attachment_description - attachments;
+    color_grading_pass_input_attachment_reference.attachment = &backup_even_color_attachment_description - attachments;
     color_grading_pass_input_attachment_reference.layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     RHIAttachmentReference color_grading_pass_color_attachment_reference {};
-    if (m_enable_fxaa) {
-        color_grading_pass_color_attachment_reference.attachment =
-            &post_process_odd_color_attachment_description - attachments;
-    } else {
-        color_grading_pass_color_attachment_reference.attachment =
-            &backup_odd_color_attachment_description - attachments;
-    }
+    if (m_enable_fxaa)
+        color_grading_pass_color_attachment_reference.attachment = &post_process_odd_color_attachment_description - attachments;
+    else
+        color_grading_pass_color_attachment_reference.attachment = &backup_odd_color_attachment_description - attachments;
     color_grading_pass_color_attachment_reference.layout = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     RHISubpassDescription &color_grading_pass   = subpasses[_main_camera_subpass_color_grading];
@@ -347,16 +341,36 @@ void MainCameraPass::setupRenderPass() {
     color_grading_pass.preserveAttachmentCount = 0;
     color_grading_pass.pPreserveAttachments    = NULL;
 
+    RHIAttachmentReference vignette_pass_input_attachment_reference {};
+    vignette_pass_input_attachment_reference.attachment = &backup_odd_color_attachment_description - attachments;
+    vignette_pass_input_attachment_reference.layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    RHIAttachmentReference vignette_pass_color_attachment_reference {};
+    if (m_enable_fxaa)
+        vignette_pass_color_attachment_reference.attachment = &post_process_even_color_attachment_description - attachments;
+    else
+        vignette_pass_color_attachment_reference.attachment = &backup_even_color_attachment_description - attachments;
+    vignette_pass_color_attachment_reference.layout = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    RHISubpassDescription &vignette_pass   = subpasses[_main_camera_subpass_vignette];
+    vignette_pass.pipelineBindPoint       = RHI_PIPELINE_BIND_POINT_GRAPHICS;
+    vignette_pass.inputAttachmentCount    = 1;
+    vignette_pass.pInputAttachments       = &vignette_pass_input_attachment_reference;
+    vignette_pass.colorAttachmentCount    = 1;
+    vignette_pass.pColorAttachments       = &vignette_pass_color_attachment_reference;
+    vignette_pass.pDepthStencilAttachment = NULL;
+    vignette_pass.preserveAttachmentCount = 0;
+    vignette_pass.pPreserveAttachments    = NULL;
+
     RHIAttachmentReference fxaa_pass_input_attachment_reference {};
-    if (m_enable_fxaa) {
-        fxaa_pass_input_attachment_reference.attachment =
-            &post_process_odd_color_attachment_description - attachments;
-    } else
-        fxaa_pass_input_attachment_reference.attachment = &backup_even_color_attachment_description - attachments;
+    if (m_enable_fxaa)
+        fxaa_pass_input_attachment_reference.attachment = &post_process_odd_color_attachment_description - attachments;
+    else
+        fxaa_pass_input_attachment_reference.attachment = &backup_odd_color_attachment_description - attachments;
     fxaa_pass_input_attachment_reference.layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     RHIAttachmentReference fxaa_pass_color_attachment_reference {};
-    fxaa_pass_color_attachment_reference.attachment = &backup_odd_color_attachment_description - attachments;
+    fxaa_pass_color_attachment_reference.attachment = &backup_even_color_attachment_description - attachments;
     fxaa_pass_color_attachment_reference.layout     = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     RHISubpassDescription &fxaa_pass   = subpasses[_main_camera_subpass_fxaa];
@@ -370,10 +384,10 @@ void MainCameraPass::setupRenderPass() {
     fxaa_pass.pPreserveAttachments    = NULL;
 
     RHIAttachmentReference ui_pass_color_attachment_reference {};
-    ui_pass_color_attachment_reference.attachment = &backup_even_color_attachment_description - attachments;
+    ui_pass_color_attachment_reference.attachment = &backup_odd_color_attachment_description - attachments;
     ui_pass_color_attachment_reference.layout     = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-    uint32_t ui_pass_preserve_attachment = &backup_odd_color_attachment_description - attachments;
+    uint32_t ui_pass_preserve_attachment = &backup_even_color_attachment_description - attachments;
 
     RHISubpassDescription &ui_pass  = subpasses[_main_camera_subpass_ui];
     ui_pass.pipelineBindPoint       = RHI_PIPELINE_BIND_POINT_GRAPHICS;
@@ -386,21 +400,19 @@ void MainCameraPass::setupRenderPass() {
     ui_pass.pPreserveAttachments    = &ui_pass_preserve_attachment;
 
     RHIAttachmentReference combine_ui_pass_input_attachments_reference[2] = {};
-    combine_ui_pass_input_attachments_reference[0].attachment =
-        &backup_odd_color_attachment_description - attachments;
+    combine_ui_pass_input_attachments_reference[0].attachment = &backup_even_color_attachment_description - attachments;
     combine_ui_pass_input_attachments_reference[0].layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    combine_ui_pass_input_attachments_reference[1].attachment =
-        &backup_even_color_attachment_description - attachments;
+    combine_ui_pass_input_attachments_reference[1].attachment = &backup_odd_color_attachment_description - attachments;
     combine_ui_pass_input_attachments_reference[1].layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     RHIAttachmentReference combine_ui_pass_color_attachment_reference {};
     combine_ui_pass_color_attachment_reference.attachment = &swapchain_image_attachment_description - attachments;
     combine_ui_pass_color_attachment_reference.layout     = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-    RHISubpassDescription &combine_ui_pass = subpasses[_main_camera_subpass_combine_ui];
-    combine_ui_pass.pipelineBindPoint      = RHI_PIPELINE_BIND_POINT_GRAPHICS;
-    combine_ui_pass.inputAttachmentCount   = sizeof(combine_ui_pass_input_attachments_reference) /
-                   sizeof(combine_ui_pass_input_attachments_reference[0]);
+    RHISubpassDescription &combine_ui_pass  = subpasses[_main_camera_subpass_combine_ui];
+    combine_ui_pass.pipelineBindPoint       = RHI_PIPELINE_BIND_POINT_GRAPHICS;
+    combine_ui_pass.inputAttachmentCount    = sizeof(combine_ui_pass_input_attachments_reference) /
+                                              sizeof(combine_ui_pass_input_attachments_reference[0]);
     combine_ui_pass.pInputAttachments       = combine_ui_pass_input_attachments_reference;
     combine_ui_pass.colorAttachmentCount    = 1;
     combine_ui_pass.pColorAttachments       = &combine_ui_pass_color_attachment_reference;
@@ -408,103 +420,91 @@ void MainCameraPass::setupRenderPass() {
     combine_ui_pass.preserveAttachmentCount = 0;
     combine_ui_pass.pPreserveAttachments    = NULL;
 
-    RHISubpassDependency dependencies[8] = {};
+    RHISubpassDependency dependencies[9] = {};
+    auto srcStageMaskCommon = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    auto dstStageMaskCommon = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    auto srcAccessMaskCommon = RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    auto dstAccessMaskCommon = RHI_ACCESS_SHADER_READ_BIT | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
 
     RHISubpassDependency &deferred_lighting_pass_depend_on_shadow_map_pass = dependencies[0];
-    deferred_lighting_pass_depend_on_shadow_map_pass.srcSubpass           = RHI_SUBPASS_EXTERNAL;
-    deferred_lighting_pass_depend_on_shadow_map_pass.dstSubpass           = _main_camera_subpass_deferred_lighting;
-    deferred_lighting_pass_depend_on_shadow_map_pass.srcStageMask  = RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    deferred_lighting_pass_depend_on_shadow_map_pass.dstStageMask  = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    deferred_lighting_pass_depend_on_shadow_map_pass.srcAccessMask = RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    deferred_lighting_pass_depend_on_shadow_map_pass.dstAccessMask = RHI_ACCESS_SHADER_READ_BIT;
+    deferred_lighting_pass_depend_on_shadow_map_pass.srcSubpass      = RHI_SUBPASS_EXTERNAL;
+    deferred_lighting_pass_depend_on_shadow_map_pass.dstSubpass      = _main_camera_subpass_deferred_lighting;
+    deferred_lighting_pass_depend_on_shadow_map_pass.srcStageMask    = RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    deferred_lighting_pass_depend_on_shadow_map_pass.dstStageMask    = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    deferred_lighting_pass_depend_on_shadow_map_pass.srcAccessMask   = RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    deferred_lighting_pass_depend_on_shadow_map_pass.dstAccessMask   = RHI_ACCESS_SHADER_READ_BIT;
     deferred_lighting_pass_depend_on_shadow_map_pass.dependencyFlags = 0; // NOT BY REGION
 
     RHISubpassDependency &deferred_lighting_pass_depend_on_base_pass = dependencies[1];
-    deferred_lighting_pass_depend_on_base_pass.srcSubpass           = _main_camera_subpass_basepass;
-    deferred_lighting_pass_depend_on_base_pass.dstSubpass           = _main_camera_subpass_deferred_lighting;
-    deferred_lighting_pass_depend_on_base_pass.srcStageMask =
-        RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    deferred_lighting_pass_depend_on_base_pass.dstStageMask =
-        RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    deferred_lighting_pass_depend_on_base_pass.srcAccessMask =
-        RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    deferred_lighting_pass_depend_on_base_pass.dstAccessMask =
-        RHI_ACCESS_SHADER_READ_BIT | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+    deferred_lighting_pass_depend_on_base_pass.srcSubpass      = _main_camera_subpass_basepass;
+    deferred_lighting_pass_depend_on_base_pass.dstSubpass      = _main_camera_subpass_deferred_lighting;
+    deferred_lighting_pass_depend_on_base_pass.srcStageMask    = srcStageMaskCommon;
+    deferred_lighting_pass_depend_on_base_pass.dstStageMask    = dstStageMaskCommon;
+    deferred_lighting_pass_depend_on_base_pass.srcAccessMask   = srcAccessMaskCommon;
+    deferred_lighting_pass_depend_on_base_pass.dstAccessMask   = dstAccessMaskCommon;
     deferred_lighting_pass_depend_on_base_pass.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
 
     RHISubpassDependency &forward_lighting_pass_depend_on_deferred_lighting_pass = dependencies[2];
-    forward_lighting_pass_depend_on_deferred_lighting_pass.srcSubpass = _main_camera_subpass_deferred_lighting;
-    forward_lighting_pass_depend_on_deferred_lighting_pass.dstSubpass = _main_camera_subpass_forward_lighting;
-    forward_lighting_pass_depend_on_deferred_lighting_pass.srcStageMask =
-        RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    forward_lighting_pass_depend_on_deferred_lighting_pass.dstStageMask =
-        RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    forward_lighting_pass_depend_on_deferred_lighting_pass.srcAccessMask =
-        RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    forward_lighting_pass_depend_on_deferred_lighting_pass.dstAccessMask =
-        RHI_ACCESS_SHADER_READ_BIT | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+    forward_lighting_pass_depend_on_deferred_lighting_pass.srcSubpass      = _main_camera_subpass_deferred_lighting;
+    forward_lighting_pass_depend_on_deferred_lighting_pass.dstSubpass      = _main_camera_subpass_forward_lighting;
+    forward_lighting_pass_depend_on_deferred_lighting_pass.srcStageMask    = srcStageMaskCommon;
+    forward_lighting_pass_depend_on_deferred_lighting_pass.dstStageMask    = dstStageMaskCommon;
+    forward_lighting_pass_depend_on_deferred_lighting_pass.srcAccessMask   = srcAccessMaskCommon;
+    forward_lighting_pass_depend_on_deferred_lighting_pass.dstAccessMask   = dstAccessMaskCommon;
     forward_lighting_pass_depend_on_deferred_lighting_pass.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
 
     RHISubpassDependency &tone_mapping_pass_depend_on_lighting_pass = dependencies[3];
-    tone_mapping_pass_depend_on_lighting_pass.srcSubpass           = _main_camera_subpass_forward_lighting;
-    tone_mapping_pass_depend_on_lighting_pass.dstSubpass           = _main_camera_subpass_tone_mapping;
-    tone_mapping_pass_depend_on_lighting_pass.srcStageMask =
-        RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    tone_mapping_pass_depend_on_lighting_pass.dstStageMask =
-        RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    tone_mapping_pass_depend_on_lighting_pass.srcAccessMask =
-        RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    tone_mapping_pass_depend_on_lighting_pass.dstAccessMask =
-        RHI_ACCESS_SHADER_READ_BIT | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+    tone_mapping_pass_depend_on_lighting_pass.srcSubpass      = _main_camera_subpass_forward_lighting;
+    tone_mapping_pass_depend_on_lighting_pass.dstSubpass      = _main_camera_subpass_tone_mapping;
+    tone_mapping_pass_depend_on_lighting_pass.srcStageMask    = srcStageMaskCommon;
+    tone_mapping_pass_depend_on_lighting_pass.dstStageMask    = dstStageMaskCommon;
+    tone_mapping_pass_depend_on_lighting_pass.srcAccessMask   = srcAccessMaskCommon;
+    tone_mapping_pass_depend_on_lighting_pass.dstAccessMask   = dstAccessMaskCommon;
     tone_mapping_pass_depend_on_lighting_pass.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
 
     RHISubpassDependency &color_grading_pass_depend_on_tone_mapping_pass = dependencies[4];
-    color_grading_pass_depend_on_tone_mapping_pass.srcSubpass           = _main_camera_subpass_tone_mapping;
-    color_grading_pass_depend_on_tone_mapping_pass.dstSubpass           = _main_camera_subpass_color_grading;
-    color_grading_pass_depend_on_tone_mapping_pass.srcStageMask =
-        RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    color_grading_pass_depend_on_tone_mapping_pass.dstStageMask =
-        RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    color_grading_pass_depend_on_tone_mapping_pass.srcAccessMask =
-        RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    color_grading_pass_depend_on_tone_mapping_pass.dstAccessMask =
-        RHI_ACCESS_SHADER_READ_BIT | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+    color_grading_pass_depend_on_tone_mapping_pass.srcSubpass      = _main_camera_subpass_tone_mapping;
+    color_grading_pass_depend_on_tone_mapping_pass.dstSubpass      = _main_camera_subpass_color_grading;
+    color_grading_pass_depend_on_tone_mapping_pass.srcStageMask    = srcStageMaskCommon;
+    color_grading_pass_depend_on_tone_mapping_pass.dstStageMask    = dstStageMaskCommon;
+    color_grading_pass_depend_on_tone_mapping_pass.srcAccessMask   = srcAccessMaskCommon;
+    color_grading_pass_depend_on_tone_mapping_pass.dstAccessMask   = dstAccessMaskCommon;
     color_grading_pass_depend_on_tone_mapping_pass.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
 
-    RHISubpassDependency &fxaa_pass_depend_on_color_grading_pass = dependencies[5];
-    fxaa_pass_depend_on_color_grading_pass.srcSubpass           = _main_camera_subpass_color_grading;
-    fxaa_pass_depend_on_color_grading_pass.dstSubpass           = _main_camera_subpass_fxaa;
-    fxaa_pass_depend_on_color_grading_pass.srcStageMask =
-        RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    fxaa_pass_depend_on_color_grading_pass.dstStageMask =
-        RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    fxaa_pass_depend_on_color_grading_pass.srcAccessMask =
-        RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    fxaa_pass_depend_on_color_grading_pass.dstAccessMask =
-        RHI_ACCESS_SHADER_READ_BIT | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+    RHISubpassDependency &vignette_pass_depend_on_color_grading_pass = dependencies[5];
+    vignette_pass_depend_on_color_grading_pass.srcSubpass      = _main_camera_subpass_color_grading;
+    vignette_pass_depend_on_color_grading_pass.dstSubpass      = _main_camera_subpass_vignette;
+    vignette_pass_depend_on_color_grading_pass.srcStageMask    = srcStageMaskCommon;
+    vignette_pass_depend_on_color_grading_pass.dstStageMask    = dstStageMaskCommon;
+    vignette_pass_depend_on_color_grading_pass.srcAccessMask   = srcAccessMaskCommon;
+    vignette_pass_depend_on_color_grading_pass.dstAccessMask   = dstAccessMaskCommon;
+    vignette_pass_depend_on_color_grading_pass.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
 
-    RHISubpassDependency &ui_pass_depend_on_fxaa_pass = dependencies[6];
-    ui_pass_depend_on_fxaa_pass.srcSubpass           = _main_camera_subpass_fxaa;
-    ui_pass_depend_on_fxaa_pass.dstSubpass           = _main_camera_subpass_ui;
-    ui_pass_depend_on_fxaa_pass.srcStageMask =
-        RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    ui_pass_depend_on_fxaa_pass.dstStageMask =
-        RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    ui_pass_depend_on_fxaa_pass.srcAccessMask   = RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    ui_pass_depend_on_fxaa_pass.dstAccessMask   = RHI_ACCESS_SHADER_READ_BIT | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+    RHISubpassDependency &fxaa_pass_depend_on_vignette_pass = dependencies[6];
+    fxaa_pass_depend_on_vignette_pass.srcSubpass      = _main_camera_subpass_vignette;
+    fxaa_pass_depend_on_vignette_pass.dstSubpass      = _main_camera_subpass_fxaa;
+    fxaa_pass_depend_on_vignette_pass.srcStageMask    = srcStageMaskCommon;
+    fxaa_pass_depend_on_vignette_pass.dstStageMask    = dstStageMaskCommon;
+    fxaa_pass_depend_on_vignette_pass.srcAccessMask   = srcAccessMaskCommon;
+    fxaa_pass_depend_on_vignette_pass.dstAccessMask   = dstAccessMaskCommon;
+    fxaa_pass_depend_on_vignette_pass.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
+
+    RHISubpassDependency &ui_pass_depend_on_fxaa_pass = dependencies[7];
+    ui_pass_depend_on_fxaa_pass.srcSubpass      = _main_camera_subpass_fxaa;
+    ui_pass_depend_on_fxaa_pass.dstSubpass      = _main_camera_subpass_ui;
+    ui_pass_depend_on_fxaa_pass.srcStageMask    = srcStageMaskCommon;
+    ui_pass_depend_on_fxaa_pass.dstStageMask    = dstStageMaskCommon;
+    ui_pass_depend_on_fxaa_pass.srcAccessMask   = srcAccessMaskCommon;
+    ui_pass_depend_on_fxaa_pass.dstAccessMask   = dstAccessMaskCommon;
     ui_pass_depend_on_fxaa_pass.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
 
-    RHISubpassDependency &combine_ui_pass_depend_on_ui_pass = dependencies[7];
-    combine_ui_pass_depend_on_ui_pass.srcSubpass           = _main_camera_subpass_ui;
-    combine_ui_pass_depend_on_ui_pass.dstSubpass           = _main_camera_subpass_combine_ui;
-    combine_ui_pass_depend_on_ui_pass.srcStageMask =
-        RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    combine_ui_pass_depend_on_ui_pass.dstStageMask =
-        RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    combine_ui_pass_depend_on_ui_pass.srcAccessMask =
-        RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    combine_ui_pass_depend_on_ui_pass.dstAccessMask =
-        RHI_ACCESS_SHADER_READ_BIT | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+    RHISubpassDependency &combine_ui_pass_depend_on_ui_pass = dependencies[8];
+    combine_ui_pass_depend_on_ui_pass.srcSubpass      = _main_camera_subpass_ui;
+    combine_ui_pass_depend_on_ui_pass.dstSubpass      = _main_camera_subpass_combine_ui;
+    combine_ui_pass_depend_on_ui_pass.srcStageMask    = srcStageMaskCommon;
+    combine_ui_pass_depend_on_ui_pass.dstStageMask    = dstStageMaskCommon;
+    combine_ui_pass_depend_on_ui_pass.srcAccessMask   = srcAccessMaskCommon;
+    combine_ui_pass_depend_on_ui_pass.dstAccessMask   = dstAccessMaskCommon;
     combine_ui_pass_depend_on_ui_pass.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
 
     RHIRenderPassCreateInfo renderpass_create_info {};
@@ -1845,6 +1845,7 @@ void MainCameraPass::updateAfterFramebufferRecreate() {
 
 // main camera pass draw function for deferred rendering
 void MainCameraPass::draw(ColorGradingPass &color_grading_pass,
+                          VignettePass     &vignette_pass,
                           FXAAPass         &fxaa_pass,
                           ToneMappingPass  &tone_mapping_pass,
                           UIPass           &ui_pass,
@@ -1908,6 +1909,10 @@ void MainCameraPass::draw(ColorGradingPass &color_grading_pass,
 
     m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
+    vignette_pass.draw();
+
+    m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
+
     if (m_enable_fxaa)
         fxaa_pass.draw();
 
@@ -1946,6 +1951,7 @@ void MainCameraPass::draw(ColorGradingPass &color_grading_pass,
 
 // main camera pass draw function for forward rendering
 void MainCameraPass::drawForward(ColorGradingPass &color_grading_pass,
+                                 VignettePass     &vignette_pass,
                                  FXAAPass         &fxaa_pass,
                                  ToneMappingPass  &tone_mapping_pass,
                                  UIPass           &ui_pass,
@@ -1990,6 +1996,10 @@ void MainCameraPass::drawForward(ColorGradingPass &color_grading_pass,
     m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
     tone_mapping_pass.draw();
+
+    m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
+
+    color_grading_pass.draw();
 
     m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
