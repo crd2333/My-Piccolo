@@ -22,7 +22,7 @@ enum class EditorCommand : unsigned int {
     translation_mode = 1 << 6,  // T
     rotation_mode    = 1 << 7,  // R
     scale_mode       = 1 << 8,  // C
-    exit             = 1 << 9,  // Esc
+    sprint           = 1 << 9,  // Left shift
     delete_object    = 1 << 10, // Delete
 };
 
@@ -44,6 +44,7 @@ public:
     Vector2 getEngineWindowPos() const { return m_engine_window_pos; };
     Vector2 getEngineWindowSize() const { return m_engine_window_size; };
     float getCameraSpeed() const { return m_camera_speed; };
+    unsigned int getEditorCommand() const { return m_editor_command; }
 
     void setEngineWindowPos(Vector2 new_window_pos) { m_engine_window_pos = new_window_pos; };
     void setEngineWindowSize(Vector2 new_window_size) { m_engine_window_size = new_window_size; };
@@ -57,7 +58,7 @@ private:
     Vector2 m_engine_window_size {1280.0f, 768.0f};
     float m_mouse_x {0.0f};
     float m_mouse_y {0.0f};
-    float m_camera_speed {0.05f};
+    float m_camera_speed {0.04f};
 
     size_t m_cursor_on_axis {3};
     unsigned int m_editor_command {0};

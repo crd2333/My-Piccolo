@@ -44,7 +44,7 @@ private:
 
     Vector3 m_position;
 
-    float move_speed = 2.0f; // Configurable speed factor
+    float move_speed = 2.0f; // speed factor
 
     Vector3 m_forward {Vector3::NEGATIVE_UNIT_Y};
     Vector3 m_up {Vector3::UNIT_Z};

@@ -39,24 +39,30 @@ void EditorInputManager::tick() {
     Quaternion      camera_rotate = editor_camera->rotation().inverse();
     Vector3         camera_relative_pos(0, 0, 0);
 
-    if ((unsigned int)EditorCommand::camera_foward & m_editor_command) {
+    if ((unsigned int)EditorCommand::sprint & m_editor_command)
+        camera_speed *= 2.0f; // 按下左 Shift 键时加速
+    if ((unsigned int)EditorCommand::camera_foward & m_editor_command)
         camera_relative_pos += camera_rotate * Vector3 {0, camera_speed, 0};
-    }
-    if ((unsigned int)EditorCommand::camera_back & m_editor_command) {
+    if ((unsigned int)EditorCommand::camera_back & m_editor_command)
         camera_relative_pos += camera_rotate * Vector3 {0, -camera_speed, 0};
-    }
-    if ((unsigned int)EditorCommand::camera_left & m_editor_command) {
+    if ((unsigned int)EditorCommand::camera_left & m_editor_command)
         camera_relative_pos += camera_rotate * Vector3 {-camera_speed, 0, 0};
-    }
-    if ((unsigned int)EditorCommand::camera_right & m_editor_command) {
+    if ((unsigned int)EditorCommand::camera_right & m_editor_command)
         camera_relative_pos += camera_rotate * Vector3 {camera_speed, 0, 0};
-    }
-    if ((unsigned int)EditorCommand::camera_up & m_editor_command) {
+    if ((unsigned int)EditorCommand::camera_up & m_editor_command)
         camera_relative_pos += Vector3 {0, 0, camera_speed};
-    }
-    if ((unsigned int)EditorCommand::camera_down & m_editor_command) {
+    if ((unsigned int)EditorCommand::camera_down & m_editor_command)
         camera_relative_pos += Vector3 {0, 0, -camera_speed};
+    if ((unsigned int)EditorCommand::translation_mode & m_editor_command) {
+        g_editor_global_context.m_scene_manager->setEditorAxisMode(EditorAxisMode::TranslateMode);
+        m_editor_command &= (k_complement_control_command ^ (unsigned int)EditorCommand::translation_mode);
     }
+    if ((unsigned int)EditorCommand::rotation_mode & m_editor_command) {
+        g_editor_global_context.m_scene_manager->setEditorAxisMode(EditorAxisMode::RotateMode);
+        m_editor_command &= (k_complement_control_command ^ (unsigned int)EditorCommand::rotation_mode);
+    }
+    if ((unsigned int)EditorCommand::scale_mode & m_editor_command)
+        g_editor_global_context.m_scene_manager->setEditorAxisMode(EditorAxisMode::ScaleMode);
     if ((unsigned int)EditorCommand::delete_object & m_editor_command)
         g_editor_global_context.m_scene_manager->onDeleteSelectedGObject();
 
@@ -96,6 +102,9 @@ void EditorInputManager::onKey(int key, int scancode, int action, int mods) {
         case GLFW_KEY_C:
             m_editor_command |= (unsigned int)EditorCommand::scale_mode;
             break;
+        case GLFW_KEY_LEFT_SHIFT:
+            m_editor_command |= (unsigned int)EditorCommand::sprint;
+            break;
         case GLFW_KEY_DELETE:
             m_editor_command |= (unsigned int)EditorCommand::delete_object;
             break;
@@ -104,8 +113,7 @@ void EditorInputManager::onKey(int key, int scancode, int action, int mods) {
         }
     } else if (action == GLFW_RELEASE) {
         switch (key) {
-        case GLFW_KEY_ESCAPE:
-            m_editor_command &= (k_complement_control_command ^ (unsigned int)EditorCommand::exit);
+        case GLFW_KEY_ESCAPE: // immediately processing，在 tick 后立即处理
             break;
         case GLFW_KEY_A:
             m_editor_command &= (k_complement_control_command ^ (unsigned int)EditorCommand::camera_left);
@@ -126,13 +134,13 @@ void EditorInputManager::onKey(int key, int scancode, int action, int mods) {
             m_editor_command &= (k_complement_control_command ^ (unsigned int)EditorCommand::camera_down);
             break;
         case GLFW_KEY_T:
-            m_editor_command &= (k_complement_control_command ^ (unsigned int)EditorCommand::translation_mode);
             break;
         case GLFW_KEY_R:
-            m_editor_command &= (k_complement_control_command ^ (unsigned int)EditorCommand::rotation_mode);
             break;
         case GLFW_KEY_C:
-            m_editor_command &= (k_complement_control_command ^ (unsigned int)EditorCommand::scale_mode);
+            break;
+        case GLFW_KEY_LEFT_SHIFT:
+            m_editor_command &= (k_complement_control_command ^ (unsigned int)EditorCommand::sprint);
             break;
         case GLFW_KEY_DELETE:
             m_editor_command &= (k_complement_control_command ^ (unsigned int)EditorCommand::delete_object);
@@ -164,7 +172,7 @@ void EditorInputManager::onCursorPos(double xpos, double ypos) {
                                                                 m_engine_window_pos, m_engine_window_size, m_cursor_on_axis,
                                                                 g_editor_global_context.m_scene_manager->getSelectedObjectMatrix());
         } else if (g_editor_global_context.m_window_system->isMouseButtonDown(GLFW_MOUSE_BUTTON_MIDDLE)) { // middle mouse button pressed
-            glfwSetInputMode(g_editor_global_context.m_window_system->getWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            glfwSetInputMode(g_editor_global_context.m_window_system->getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             Vector2 delta = Vector2(xpos - m_mouse_x, ypos - m_mouse_y); // movement of cursor
             std::shared_ptr editor_camera = g_editor_global_context.m_scene_manager->getEditorCamera();
             Quaternion camera_rotate = editor_camera->rotation().inverse(); // get inverse rotation of camera

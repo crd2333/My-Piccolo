@@ -61,6 +61,7 @@ public:
     }
     bool getFocusMode() const { return m_is_focus_mode; }
     void setFocusMode(bool mode);
+    void invertFocusMode();
 
 protected:
     // window event callbacks

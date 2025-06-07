@@ -46,9 +46,6 @@ void InputSystem::onKey(int key, int scancode, int action, int mods) {
 
     if (action == GLFW_PRESS) {
         switch (key) {
-        case GLFW_KEY_ESCAPE:
-            // close();
-            break;
         case GLFW_KEY_R:
             break;
         case GLFW_KEY_A:
@@ -70,10 +67,7 @@ void InputSystem::onKey(int key, int scancode, int action, int mods) {
             m_game_command |= (unsigned int)GameCommand::squat;
             break;
         case GLFW_KEY_LEFT_ALT:
-            {
-                std::shared_ptr<WindowSystem> window_system = g_runtime_global_context.m_window_system;
-                window_system->setFocusMode(!window_system->getFocusMode());
-            }
+            g_runtime_global_context.m_window_system->invertFocusMode();
             break;
         case GLFW_KEY_LEFT_SHIFT:
             m_game_command |= (unsigned int)GameCommand::sprint;
@@ -86,9 +80,6 @@ void InputSystem::onKey(int key, int scancode, int action, int mods) {
         }
     } else if (action == GLFW_RELEASE) {
         switch (key) {
-        case GLFW_KEY_ESCAPE:
-            // close();
-            break;
         case GLFW_KEY_R:
             break;
         case GLFW_KEY_W:

@@ -149,6 +149,8 @@ void CameraComponent::tickFreeCamera(float delta_time, float delta_pitch_rad, co
     // Movement logic specific to free camera
     bool has_move_command = ((unsigned int)GameCommand::forward | (unsigned int)GameCommand::backward |
                              (unsigned int)GameCommand::left | (unsigned int)GameCommand::right) & command;
+    bool has_sprint_command = (unsigned int)GameCommand::sprint & command;
+
     if (has_move_command) {
         Vector3 move_direction = Vector3::ZERO;
         if ((unsigned int)GameCommand::forward & command)
@@ -159,7 +161,10 @@ void CameraComponent::tickFreeCamera(float delta_time, float delta_pitch_rad, co
             move_direction += m_left;
         if ((unsigned int)GameCommand::right & command)
             move_direction -= m_left;
-        m_position += move_direction * move_speed * delta_time;
+        if (has_sprint_command)
+            m_position += move_direction * move_speed * 2.0f * delta_time; // Sprint doubles the speed
+        else
+            m_position += move_direction * move_speed * delta_time;
     }
 }
 } // namespace Piccolo

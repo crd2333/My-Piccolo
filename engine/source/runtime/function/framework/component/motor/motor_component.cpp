@@ -42,9 +42,7 @@ MotorComponent::~MotorComponent() {
     }
 }
 
-void MotorComponent::tick(float delta_time) { tickPlayerMotor(delta_time); }
-
-void MotorComponent::tickPlayerMotor(float delta_time) {
+void MotorComponent::tick(float delta_time) {
     if (!m_parent_object.lock())
         return;
 
@@ -77,8 +75,7 @@ void MotorComponent::tickPlayerMotor(float delta_time) {
 
 void MotorComponent::calculatedDesiredHorizontalMoveSpeed(unsigned int command, float delta_time) {
     bool has_move_command = ((unsigned int)GameCommand::forward | (unsigned int)GameCommand::backward |
-                             (unsigned int)GameCommand::left | (unsigned int)GameCommand::right) &
-                            command;
+                             (unsigned int)GameCommand::left | (unsigned int)GameCommand::right) & command;
     has_move_command &= ((unsigned int)GameCommand::free_camera & command) == 0;
     bool has_sprint_command = (unsigned int)GameCommand::sprint & command;
 

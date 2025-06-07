@@ -55,4 +55,9 @@ void WindowSystem::setFocusMode(bool mode) {
     m_is_focus_mode = mode;
     glfwSetInputMode(m_window, GLFW_CURSOR, m_is_focus_mode ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 }
+
+void WindowSystem::invertFocusMode() {
+    m_is_focus_mode = !m_is_focus_mode;
+    glfwSetInputMode(m_window, GLFW_CURSOR, m_is_focus_mode ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+}
 } // namespace Piccolo

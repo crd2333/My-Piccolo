@@ -28,7 +28,6 @@ public:
     ~MotorComponent() override;
 
     void tick(float delta_time) override;
-    void tickPlayerMotor(float delta_time);
 
     const Vector3 &getTargetPosition() const { return m_target_position; }
 
