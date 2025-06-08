@@ -39,59 +39,42 @@ public:
     ParticleEmitterDesc m_emitter_desc;
 
     uint32_t m_num_particle {0};
-    void     freeUpBatch(std::shared_ptr<RHI> rhi);
+    void freeUpBatch(std::shared_ptr<RHI> rhi);
 };
 
 class ParticlePass : public RenderPass {
 public:
     void initialize(const RenderPassInitInfo* init_info) override final;
-
+    void draw() override final;
+    void updateAfterFramebufferRecreate();
     void preparePassData(std::shared_ptr<RenderResourceBase> render_resource) override final;
 
-    void draw() override final;
-
     void simulate();
-
     void copyNormalAndDepthImage();
-
-    void setDepthAndNormalImage(RHIImage* depth_image, RHIImage* normal_image);
-
-    void setupParticlePass();
-
-    void setRenderCommandBufferHandle(RHICommandBuffer* command_buffer);
-
-    void setRenderPassHandle(RHIRenderPass* render_pass);
-
-    void updateAfterFramebufferRecreate();
-
-    void setEmitterCount(int count);
-
     void createEmitter(int id, const ParticleEmitterDesc &desc);
-
     void initializeEmitters();
 
+    void setDepthAndNormalImage(RHIImage* depth_image, RHIImage* normal_image);
+    void setupParticlePass();
+    void setRenderCommandBufferHandle(RHICommandBuffer* command_buffer);
+    void setRenderPassHandle(RHIRenderPass* render_pass);
+    void setEmitterCount(int count);
     void setTickIndices(const std::vector<ParticleEmitterID> &tick_indices);
-
     void setTransformIndices(const std::vector<ParticleEmitterTransformDesc> &transform_indices);
+    RHICommandBuffer* getRenderCommandBufferHandle() { return m_render_command_buffer; }
 
 private:
     void updateUniformBuffer();
-
     void updateEmitterTransform();
 
     void setupAttachments();
-
     void setupDescriptorSetLayout();
+    void setupPipelines();
+    void setupParticleDescriptorSet();
 
     void prepareUniformBuffer();
-
-    void setupPipelines();
-
     void allocateDescriptorSet();
-
     void updateDescriptorSet();
-
-    void setupParticleDescriptorSet();
 
     RHIPipeline* m_kickoff_pipeline = nullptr;
     RHIPipeline* m_emit_pipeline = nullptr;
@@ -118,9 +101,7 @@ private:
     RHIDeviceMemory* m_dst_normal_image_memory = nullptr;
     RHIDeviceMemory* m_dst_depth_image_memory = nullptr;
 
-    /*
-     * particle rendering
-     */
+    // particle rendering
     RHIImage*       m_particle_billboard_texture_image = nullptr;
     RHIImageView*   m_particle_billboard_texture_image_view = nullptr;
     VmaAllocation m_particle_billboard_texture_vma_allocation;

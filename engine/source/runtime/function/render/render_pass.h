@@ -14,32 +14,32 @@ class VulkanRHI;
 
 // attachment of main camera render pass
 enum {
-    _main_camera_pass_gbuffer_a                     = 0,
-    _main_camera_pass_gbuffer_b                     = 1,
-    _main_camera_pass_gbuffer_c                     = 2,
-    _main_camera_pass_backup_buffer_odd             = 3,
-    _main_camera_pass_backup_buffer_even            = 4,
-    _main_camera_pass_post_process_buffer_odd       = 5,
-    _main_camera_pass_post_process_buffer_even      = 6,
-    _main_camera_pass_depth                         = 7,
-    _main_camera_pass_swap_chain_image              = 8,
-    _main_camera_pass_custom_attachment_count       = 5, // 最后三个 enum 用于计数
+    _main_camera_pass_gbuffer_a = 0,
+    _main_camera_pass_gbuffer_b,
+    _main_camera_pass_gbuffer_c,
+    _main_camera_pass_backup_buffer_odd,
+    _main_camera_pass_backup_buffer_even,
+    _main_camera_pass_post_process_buffer_odd,
+    _main_camera_pass_post_process_buffer_even,
+    _main_camera_pass_depth,
+    _main_camera_pass_swap_chain_image,
+    _main_camera_pass_attachment_count,                  // 最后三个 enum 用于计数
+    _main_camera_pass_custom_attachment_count       = 5,
     _main_camera_pass_post_process_attachment_count = 2,
-    _main_camera_pass_attachment_count              = 9,
 };
 
 // subpass of main camera render pass
 enum {
-    _main_camera_subpass_basepass          = 0,
-    _main_camera_subpass_deferred_lighting = 1,
-    _main_camera_subpass_forward_lighting  = 2,
-    _main_camera_subpass_tone_mapping      = 3,
-    _main_camera_subpass_color_grading     = 4,
-    _main_camera_subpass_vignette          = 5,
-    _main_camera_subpass_fxaa              = 6,
-    _main_camera_subpass_ui                = 7,
-    _main_camera_subpass_combine_ui        = 8,
-    _main_camera_subpass_count             = 9, // 最后一个 enum 用于计数
+    _main_camera_subpass_basepass = 0,
+    _main_camera_subpass_deferred_lighting,
+    _main_camera_subpass_forward_lighting,
+    _main_camera_subpass_tone_mapping,
+    _main_camera_subpass_color_grading,
+    _main_camera_subpass_vignette,
+    _main_camera_subpass_fxaa,
+    _main_camera_subpass_ui,
+    _main_camera_subpass_combine_ui,
+    _main_camera_subpass_count, // 最后一个 enum 用于计数
 };
 
 struct VisibleNodes {

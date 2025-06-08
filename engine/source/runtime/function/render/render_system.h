@@ -61,6 +61,7 @@ public:
     GuidAllocator<MeshSourceDesc>   &getMeshAssetIdAllocator();
 
     void clearForLevelReloading();
+    bool isDeferredRendering() const { return m_render_pipeline_type == RENDER_PIPELINE_TYPE::DEFERRED_PIPELINE; }
 
 private:
     RENDER_PIPELINE_TYPE m_render_pipeline_type {RENDER_PIPELINE_TYPE::DEFERRED_PIPELINE};

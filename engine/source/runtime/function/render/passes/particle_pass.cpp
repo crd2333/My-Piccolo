@@ -41,215 +41,30 @@ void ParticleEmitterBufferBatch::freeUpBatch(std::shared_ptr<RHI> rhi) {
     rhi->destroyBuffer(m_particle_component_res_buffer);
 }
 
-void ParticlePass::copyNormalAndDepthImage() {
-    uint8_t index =
-        (m_rhi->getCurrentFrameIndex() + m_rhi->getMaxFramesInFlight() - 1) % m_rhi->getMaxFramesInFlight();
+void ParticlePass::initialize(const RenderPassInitInfo* init_info) {
+    RenderPass::initialize(nullptr);
 
-    m_rhi->waitForFencesPFN(1, &(m_rhi->getFenceList()[index]), VK_TRUE, UINT64_MAX);
+    const ParticlePassInitInfo* _init_info = static_cast<const ParticlePassInitInfo*>(init_info);
+    m_particle_manager                     = _init_info->m_particle_manager;
+}
 
-    RHICommandBufferBeginInfo command_buffer_begin_info {};
-    command_buffer_begin_info.sType            = RHI_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    command_buffer_begin_info.flags            = 0;
-    command_buffer_begin_info.pInheritanceInfo = nullptr;
+void ParticlePass::draw() {
+    for (int i = 0; i < m_emitter_count; ++i) {
+        m_rhi->cmdBindPipelinePFN(
+            m_render_command_buffer, RHI_PIPELINE_BIND_POINT_GRAPHICS, m_render_pipelines[1].pipeline);
+        m_rhi->cmdSetViewportPFN(m_render_command_buffer, 0, 1, m_rhi->getSwapchainInfo().viewport);
+        m_rhi->cmdSetScissorPFN(m_render_command_buffer, 0, 1, m_rhi->getSwapchainInfo().scissor);
+        m_rhi->cmdBindDescriptorSetsPFN(m_render_command_buffer,
+                                        RHI_PIPELINE_BIND_POINT_GRAPHICS,
+                                        m_render_pipelines[1].layout,
+                                        0,
+                                        1,
+                                        &m_descriptor_infos[i * 3 + 2].descriptor_set,
+                                        0,
+                                        NULL);
 
-    bool res_begin_command_buffer = m_rhi->beginCommandBufferPFN(m_copy_command_buffer, &command_buffer_begin_info);
-    assert(RHI_SUCCESS == res_begin_command_buffer);
-
-    float color[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-    m_rhi->pushEvent(m_copy_command_buffer, "Copy Depth Image for Particle", color);
-
-    // depth image
-    RHIImageSubresourceRange subresourceRange = {RHI_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1};
-    RHIImageMemoryBarrier    imagememorybarrier {};
-    imagememorybarrier.sType               = RHI_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    imagememorybarrier.srcQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
-    imagememorybarrier.dstQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
-    imagememorybarrier.subresourceRange    = subresourceRange;
-    {
-        imagememorybarrier.oldLayout     = RHI_IMAGE_LAYOUT_UNDEFINED;
-        imagememorybarrier.newLayout     = RHI_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        imagememorybarrier.srcAccessMask = 0;
-        imagememorybarrier.dstAccessMask = RHI_ACCESS_TRANSFER_WRITE_BIT;
-        imagememorybarrier.image         = m_dst_depth_image;
-
-        m_rhi->cmdPipelineBarrier(m_copy_command_buffer,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  0,
-                                  0,
-                                  nullptr,
-                                  0,
-                                  nullptr,
-                                  1,
-                                  &imagememorybarrier);
-
-        imagememorybarrier.oldLayout     = RHI_IMAGE_LAYOUT_UNDEFINED;
-        imagememorybarrier.newLayout     = RHI_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        imagememorybarrier.srcAccessMask = RHI_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-        imagememorybarrier.dstAccessMask = RHI_ACCESS_TRANSFER_READ_BIT;
-        imagememorybarrier.image         = m_src_depth_image;
-
-        m_rhi->cmdPipelineBarrier(m_copy_command_buffer,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  0,
-                                  0,
-                                  nullptr,
-                                  0,
-                                  nullptr,
-                                  1,
-                                  &imagememorybarrier);
-
-        m_rhi->cmdCopyImageToImage(m_copy_command_buffer,
-                                   m_src_depth_image,
-                                   RHI_IMAGE_ASPECT_DEPTH_BIT,
-                                   m_dst_depth_image,
-                                   RHI_IMAGE_ASPECT_DEPTH_BIT,
-                                   m_rhi->getSwapchainInfo().extent.width,
-                                   m_rhi->getSwapchainInfo().extent.height);
-
-        imagememorybarrier.oldLayout     = RHI_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        imagememorybarrier.newLayout     = RHI_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-        imagememorybarrier.srcAccessMask = RHI_ACCESS_TRANSFER_WRITE_BIT;
-        imagememorybarrier.dstAccessMask =
-            RHI_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | RHI_ACCESS_SHADER_READ_BIT;
-
-        m_rhi->cmdPipelineBarrier(m_copy_command_buffer,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  0,
-                                  0,
-                                  nullptr,
-                                  0,
-                                  nullptr,
-                                  1,
-                                  &imagememorybarrier);
-
-        imagememorybarrier.image         = m_dst_depth_image;
-        imagememorybarrier.oldLayout     = RHI_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        imagememorybarrier.newLayout     = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imagememorybarrier.srcAccessMask = RHI_ACCESS_TRANSFER_WRITE_BIT;
-        imagememorybarrier.dstAccessMask = RHI_ACCESS_SHADER_READ_BIT;
-
-        m_rhi->cmdPipelineBarrier(m_copy_command_buffer,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  0,
-                                  0,
-                                  nullptr,
-                                  0,
-                                  nullptr,
-                                  1,
-                                  &imagememorybarrier);
+        m_rhi->cmdDraw(m_render_command_buffer, 4, m_emitter_buffer_batches[i].m_num_particle, 0, 0);
     }
-
-    m_rhi->popEvent(m_copy_command_buffer); // end depth image copy label
-
-    m_rhi->pushEvent(m_copy_command_buffer, "Copy Normal Image for Particle", color);
-
-    // color image
-    subresourceRange                    = {RHI_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-    imagememorybarrier.subresourceRange = subresourceRange;
-    {
-        imagememorybarrier.oldLayout     = RHI_IMAGE_LAYOUT_UNDEFINED;
-        imagememorybarrier.newLayout     = RHI_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        imagememorybarrier.srcAccessMask = 0;
-        imagememorybarrier.dstAccessMask = RHI_ACCESS_TRANSFER_WRITE_BIT;
-        imagememorybarrier.image         = m_dst_normal_image;
-
-        m_rhi->cmdPipelineBarrier(m_copy_command_buffer,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  0,
-                                  0,
-                                  nullptr,
-                                  0,
-                                  nullptr,
-                                  1,
-                                  &imagememorybarrier);
-
-        imagememorybarrier.oldLayout     = RHI_IMAGE_LAYOUT_UNDEFINED;
-        imagememorybarrier.newLayout     = RHI_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        imagememorybarrier.srcAccessMask = RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        imagememorybarrier.dstAccessMask = RHI_ACCESS_TRANSFER_READ_BIT;
-        imagememorybarrier.image         = m_src_normal_image;
-
-        m_rhi->cmdPipelineBarrier(m_copy_command_buffer,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  0,
-                                  0,
-                                  nullptr,
-                                  0,
-                                  nullptr,
-                                  1,
-                                  &imagememorybarrier);
-
-        m_rhi->cmdCopyImageToImage(m_copy_command_buffer,
-                                   m_src_normal_image,
-                                   RHI_IMAGE_ASPECT_COLOR_BIT,
-                                   m_dst_normal_image,
-                                   RHI_IMAGE_ASPECT_COLOR_BIT,
-                                   m_rhi->getSwapchainInfo().extent.width,
-                                   m_rhi->getSwapchainInfo().extent.height);
-
-        imagememorybarrier.oldLayout     = RHI_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        imagememorybarrier.newLayout     = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imagememorybarrier.srcAccessMask = RHI_ACCESS_TRANSFER_WRITE_BIT;
-        imagememorybarrier.dstAccessMask = RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT | RHI_ACCESS_SHADER_READ_BIT;
-
-        m_rhi->cmdPipelineBarrier(m_copy_command_buffer,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  0,
-                                  0,
-                                  nullptr,
-                                  0,
-                                  nullptr,
-                                  1,
-                                  &imagememorybarrier);
-
-        imagememorybarrier.image         = m_dst_normal_image;
-        imagememorybarrier.oldLayout     = RHI_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        imagememorybarrier.newLayout     = RHI_IMAGE_LAYOUT_GENERAL;
-        imagememorybarrier.srcAccessMask = RHI_ACCESS_TRANSFER_WRITE_BIT;
-        imagememorybarrier.dstAccessMask = RHI_ACCESS_SHADER_READ_BIT;
-
-        m_rhi->cmdPipelineBarrier(m_copy_command_buffer,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  0,
-                                  0,
-                                  nullptr,
-                                  0,
-                                  nullptr,
-                                  1,
-                                  &imagememorybarrier);
-    }
-
-    m_rhi->popEvent(m_copy_command_buffer);
-
-    bool res_end_command_buffer = m_rhi->endCommandBufferPFN(m_copy_command_buffer);
-    assert(RHI_SUCCESS == res_end_command_buffer);
-
-    bool res_reset_fences = m_rhi->resetFencesPFN(1, &m_rhi->getFenceList()[index]);
-    assert(RHI_SUCCESS == res_reset_fences);
-
-    RHIPipelineStageFlags wait_stages[] = {RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    RHISubmitInfo         submit_info   = {};
-    submit_info.sType                   = RHI_STRUCTURE_TYPE_SUBMIT_INFO;
-    submit_info.waitSemaphoreCount      = 1;
-    submit_info.pWaitSemaphores         = &(m_rhi->getTextureCopySemaphore(index));
-    submit_info.pWaitDstStageMask       = wait_stages;
-    submit_info.commandBufferCount      = 1;
-    submit_info.pCommandBuffers         = &m_copy_command_buffer;
-    submit_info.signalSemaphoreCount    = 0;
-    submit_info.pSignalSemaphores       = nullptr;
-    bool res_queue_submit =
-        m_rhi->queueSubmit(m_rhi->getGraphicsQueue(), 1, &submit_info, m_rhi->getFenceList()[index]);
-    assert(RHI_SUCCESS == res_queue_submit);
-
-    m_rhi->queueWaitIdle(m_rhi->getGraphicsQueue());
 }
 
 void ParticlePass::updateAfterFramebufferRecreate() {
@@ -302,186 +117,350 @@ void ParticlePass::updateAfterFramebufferRecreate() {
     updateDescriptorSet();
 }
 
-void ParticlePass::draw() {
-    for (int i = 0; i < m_emitter_count; ++i) {
+void ParticlePass::preparePassData(std::shared_ptr<RenderResourceBase> render_resource) {
+    const RenderResource* vulkan_resource = static_cast<const RenderResource*>(render_resource.get());
+    if (vulkan_resource) {
+        m_particle_collision_perframe_storage_buffer_object =
+            vulkan_resource->m_particle_collision_perframe_storage_buffer_object;
+        memcpy(m_scene_uniform_buffer_mapped,
+               &m_particle_collision_perframe_storage_buffer_object,
+               sizeof(ParticleCollisionPerframeStorageBufferObject));
+
+        m_particlebillboard_perframe_storage_buffer_object =
+            vulkan_resource->m_particlebillboard_perframe_storage_buffer_object;
+        memcpy(m_particle_billboard_uniform_buffer_mapped,
+               &m_particlebillboard_perframe_storage_buffer_object,
+               sizeof(m_particlebillboard_perframe_storage_buffer_object));
+
+        m_viewport_params = *m_rhi->getSwapchainInfo().viewport;
+        updateUniformBuffer();
+        updateEmitterTransform();
+    }
+}
+
+void ParticlePass::simulate() {
+    for (auto i : m_emitter_tick_indices) {
+        RHICommandBufferBeginInfo cmdBufInfo {};
+        cmdBufInfo.sType = RHI_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+        // particle compute pass
+        if (RHI_SUCCESS != m_rhi->beginCommandBuffer(m_compute_command_buffer, &cmdBufInfo))
+            throw std::runtime_error("begin command buffer");
+
         float color[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-        m_rhi->pushEvent(m_render_command_buffer, "ParticleBillboard", color);
+        m_rhi->pushEvent(m_compute_command_buffer, "Particle compute", color);
+        m_rhi->pushEvent(m_compute_command_buffer, "Particle Kickoff", color);
 
-        m_rhi->cmdBindPipelinePFN(
-            m_render_command_buffer, RHI_PIPELINE_BIND_POINT_GRAPHICS, m_render_pipelines[1].pipeline);
-        m_rhi->cmdSetViewportPFN(m_render_command_buffer, 0, 1, m_rhi->getSwapchainInfo().viewport);
-        m_rhi->cmdSetScissorPFN(m_render_command_buffer, 0, 1, m_rhi->getSwapchainInfo().scissor);
-        m_rhi->cmdBindDescriptorSetsPFN(m_render_command_buffer,
-                                        RHI_PIPELINE_BIND_POINT_GRAPHICS,
-                                        m_render_pipelines[1].layout,
+        m_rhi->cmdBindPipelinePFN(m_compute_command_buffer, RHI_PIPELINE_BIND_POINT_COMPUTE, m_kickoff_pipeline);
+        RHIDescriptorSet* descriptorsets[2] = {m_descriptor_infos[i * 3].descriptor_set,
+                                               m_descriptor_infos[i * 3 + 1].descriptor_set
+                                              };
+        m_rhi->cmdBindDescriptorSetsPFN(m_compute_command_buffer,
+                                        RHI_PIPELINE_BIND_POINT_COMPUTE,
+                                        m_render_pipelines[0].layout,
                                         0,
-                                        1,
-                                        &m_descriptor_infos[i * 3 + 2].descriptor_set,
+                                        2,
+                                        descriptorsets,
                                         0,
-                                        NULL);
+                                        0);
 
-        m_rhi->cmdDraw(m_render_command_buffer, 4, m_emitter_buffer_batches[i].m_num_particle, 0, 0);
 
-        m_rhi->popEvent(m_render_command_buffer);
+        m_rhi->cmdDispatch(m_compute_command_buffer, 1, 1, 1);
+
+        m_rhi->popEvent(m_compute_command_buffer); // end particle kickoff label
+
+        auto setBufferBarrier = [&](RHIBuffer* buffer,
+                RHIAccessFlags srcAccessMask = RHI_ACCESS_SHADER_WRITE_BIT, RHIAccessFlags dstAccessMask = RHI_ACCESS_SHADER_READ_BIT,
+                RHIPipelineStageFlagBits srcStageMask = RHI_PIPELINE_STAGE_COMPUTE_SHADER_BIT, RHIPipelineStageFlagBits dstStageMask = RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT
+        ) {
+            RHIBufferMemoryBarrier bufferBarrier {};
+            bufferBarrier.sType               = RHI_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+            bufferBarrier.buffer              = buffer;
+            bufferBarrier.size                = RHI_WHOLE_SIZE;
+            bufferBarrier.srcAccessMask       = srcAccessMask;
+            bufferBarrier.dstAccessMask       = dstAccessMask;
+            bufferBarrier.srcQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
+            bufferBarrier.dstQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
+
+            m_rhi->cmdPipelineBarrier(m_compute_command_buffer,
+                                      srcStageMask, dstStageMask,
+                                      0,
+                                      0,
+                                      nullptr,
+                                      1,
+                                      &bufferBarrier,
+                                      0,
+                                      nullptr);
+        };
+
+        setBufferBarrier(m_emitter_buffer_batches[i].m_counter_device_buffer);
+
+        setBufferBarrier(m_emitter_buffer_batches[i].m_indirect_dispatch_argument_buffer,
+                         RHI_ACCESS_SHADER_WRITE_BIT,
+                         RHI_ACCESS_INDIRECT_COMMAND_READ_BIT | RHI_ACCESS_SHADER_READ_BIT);
+
+        m_rhi->pushEvent(m_compute_command_buffer, "Particle Emit", color);
+
+        m_rhi->cmdBindPipelinePFN(m_compute_command_buffer, RHI_PIPELINE_BIND_POINT_COMPUTE, m_emit_pipeline);
+
+        m_rhi->cmdDispatchIndirect(m_compute_command_buffer,
+                                   m_emitter_buffer_batches[i].m_indirect_dispatch_argument_buffer,
+                                   s_argument_offset_emit);
+
+        m_rhi->popEvent(m_compute_command_buffer); // end particle emit label
+
+        setBufferBarrier(m_emitter_buffer_batches[i].m_position_device_buffer);
+
+        setBufferBarrier(m_emitter_buffer_batches[i].m_position_render_buffer);
+
+        setBufferBarrier(m_emitter_buffer_batches[i].m_counter_device_buffer);
+
+        setBufferBarrier(m_emitter_buffer_batches[i].m_alive_list_buffer);
+
+        setBufferBarrier(m_emitter_buffer_batches[i].m_dead_list_buffer);
+
+        setBufferBarrier(m_emitter_buffer_batches[i].m_alive_list_next_buffer);
+
+        m_rhi->pushEvent(m_compute_command_buffer, "Particle Simulate", color);
+
+        m_rhi->cmdBindPipelinePFN(m_compute_command_buffer, RHI_PIPELINE_BIND_POINT_COMPUTE, m_simulate_pipeline);
+        m_rhi->cmdDispatchIndirect(m_compute_command_buffer,
+                                   m_emitter_buffer_batches[i].m_indirect_dispatch_argument_buffer,
+                                   s_argument_offset_simulate);
+
+        m_rhi->popEvent(m_compute_command_buffer); // end particle simulate label
+
+        if (RHI_SUCCESS != m_rhi->endCommandBuffer(m_compute_command_buffer))
+            throw std::runtime_error("end command buffer");
+        m_rhi->resetFencesPFN(1, &m_fence);
+
+        RHISubmitInfo computeSubmitInfo {};
+        computeSubmitInfo.sType              = RHI_STRUCTURE_TYPE_SUBMIT_INFO;
+        computeSubmitInfo.pWaitDstStageMask  = 0;
+        computeSubmitInfo.commandBufferCount = 1;
+        computeSubmitInfo.pCommandBuffers    = &m_compute_command_buffer;
+
+        if (RHI_SUCCESS != m_rhi->queueSubmit(m_rhi->getComputeQueue(), 1, &computeSubmitInfo, m_fence))
+            throw std::runtime_error("compute queue submit");
+
+        if (RHI_SUCCESS != m_rhi->waitForFencesPFN(1, &m_fence, RHI_TRUE, UINT64_MAX))
+            throw std::runtime_error("wait for fence");
+
+        if (RHI_SUCCESS != m_rhi->beginCommandBuffer(m_compute_command_buffer, &cmdBufInfo))
+            throw std::runtime_error("begin command buffer");
+
+        m_rhi->pushEvent(m_compute_command_buffer, "Copy Particle Counter Buffer", color);
+
+        // Barrier to ensure that shader writes are finished before buffer is read back from GPU
+        setBufferBarrier(m_emitter_buffer_batches[i].m_counter_device_buffer,
+                         RHI_ACCESS_SHADER_WRITE_BIT,
+                         RHI_ACCESS_TRANSFER_READ_BIT,
+                         RHI_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                         RHI_PIPELINE_STAGE_TRANSFER_BIT);
+        // Read back to host visible buffer
+
+        RHIBufferCopy copyRegion {};
+        copyRegion.srcOffset = 0;
+        copyRegion.dstOffset = 0;
+        copyRegion.size      = sizeof(ParticleCounter);
+
+        m_rhi->cmdCopyBuffer(m_compute_command_buffer,
+                             m_emitter_buffer_batches[i].m_counter_device_buffer,
+                             m_emitter_buffer_batches[i].m_counter_host_buffer,
+                             1,
+                             &copyRegion);
+
+        // Barrier to ensure that shader writes are finished before buffer is read back from GPU
+        setBufferBarrier(m_emitter_buffer_batches[i].m_counter_host_buffer,
+                         RHI_ACCESS_TRANSFER_WRITE_BIT,
+                         RHI_ACCESS_HOST_READ_BIT,
+                         RHI_PIPELINE_STAGE_TRANSFER_BIT,
+                         RHI_PIPELINE_STAGE_HOST_BIT);
+
+        m_rhi->popEvent(m_compute_command_buffer); // end particle counter copy label
+
+        m_rhi->popEvent(m_compute_command_buffer); // end particle compute label
+
+        if (RHI_SUCCESS != m_rhi->endCommandBuffer(m_compute_command_buffer))
+            throw std::runtime_error("end command buffer");
+
+        // Submit compute work
+        m_rhi->resetFencesPFN(1, &m_fence);
+        computeSubmitInfo                        = {};
+        const VkPipelineStageFlags waitStageMask = RHI_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        computeSubmitInfo.sType                  = RHI_STRUCTURE_TYPE_SUBMIT_INFO;
+        computeSubmitInfo.pWaitDstStageMask      = &waitStageMask;
+        computeSubmitInfo.commandBufferCount     = 1;
+        computeSubmitInfo.pCommandBuffers        = &m_compute_command_buffer;
+
+        if (RHI_SUCCESS != m_rhi->queueSubmit(m_rhi->getComputeQueue(), 1, &computeSubmitInfo, m_fence))
+            throw std::runtime_error("compute queue submit");
+
+        if (RHI_SUCCESS != m_rhi->waitForFencesPFN(1, &m_fence, RHI_TRUE, UINT64_MAX))
+            throw std::runtime_error("wait for fence");
+
+        m_rhi->queueWaitIdle(m_rhi->getComputeQueue());
+
+        // Make device writes visible to the host
+        void* mapped;
+        m_rhi->mapMemory(m_emitter_buffer_batches[i].m_counter_host_memory, 0, RHI_WHOLE_SIZE, 0, &mapped);
+
+        m_rhi->invalidateMappedMemoryRanges(
+            nullptr, m_emitter_buffer_batches[i].m_counter_host_memory, 0, RHI_WHOLE_SIZE);
+
+        // Copy to output
+        ParticleCounter counterNext {};
+        memcpy(&counterNext, mapped, sizeof(ParticleCounter));
+        m_rhi->unmapMemory(m_emitter_buffer_batches[i].m_counter_host_memory);
+
+        if constexpr (s_verbose_particle_alive_info)
+            LOG_INFO("{} {} {} {}",
+                     counterNext.dead_count,
+                     counterNext.alive_count,
+                     counterNext.alive_count_after_sim,
+                     counterNext.emit_count);
+        m_emitter_buffer_batches[i].m_num_particle = counterNext.alive_count_after_sim;
     }
+    m_emitter_tick_indices.clear();
+    m_emitter_transform_indices.clear();
 }
 
-void ParticlePass::setupAttachments() {
-    // billboard texture
-    {
-        std::shared_ptr<TextureData> m_particle_billboard_texture_resource = m_render_resource->loadTextureHDR(
-                m_particle_manager->getGlobalParticleRes().m_particle_billboard_texture_path);
-        m_rhi->createGlobalImage(m_particle_billboard_texture_image,
-                                 m_particle_billboard_texture_image_view,
-                                 m_particle_billboard_texture_vma_allocation,
-                                 m_particle_billboard_texture_resource->m_width,
-                                 m_particle_billboard_texture_resource->m_height,
-                                 m_particle_billboard_texture_resource->m_pixels,
-                                 m_particle_billboard_texture_resource->m_format);
-    }
+void ParticlePass::copyNormalAndDepthImage() {
+    uint8_t index =
+        (m_rhi->getCurrentFrameIndex() + m_rhi->getMaxFramesInFlight() - 1) % m_rhi->getMaxFramesInFlight();
 
-    // piccolo texture
-    {
-        std::shared_ptr<TextureData> m_piccolo_logo_texture_resource = m_render_resource->loadTexture(
-                m_particle_manager->getGlobalParticleRes().m_piccolo_logo_texture_path, true);
-        m_rhi->createGlobalImage(m_piccolo_logo_texture_image,
-                                 m_piccolo_logo_texture_image_view,
-                                 m_piccolo_logo_texture_vma_allocation,
-                                 m_piccolo_logo_texture_resource->m_width,
-                                 m_piccolo_logo_texture_resource->m_height,
-                                 m_piccolo_logo_texture_resource->m_pixels,
-                                 m_piccolo_logo_texture_resource->m_format);
-    }
+    m_rhi->waitForFencesPFN(1, &(m_rhi->getFenceList()[index]), VK_TRUE, UINT64_MAX);
 
-    m_rhi->createImage(m_rhi->getSwapchainInfo().extent.width,
-                       m_rhi->getSwapchainInfo().extent.height,
-                       m_rhi->getDepthImageInfo().depth_image_format,
-                       RHI_IMAGE_TILING_OPTIMAL,
-                       RHI_IMAGE_USAGE_SAMPLED_BIT | RHI_IMAGE_USAGE_TRANSFER_DST_BIT,
-                       RHI_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                       m_dst_depth_image,
-                       m_dst_depth_image_memory,
-                       0,
-                       1,
-                       1);
+    RHICommandBufferBeginInfo command_buffer_begin_info {};
+    command_buffer_begin_info.sType            = RHI_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    command_buffer_begin_info.flags            = 0;
+    command_buffer_begin_info.pInheritanceInfo = nullptr;
 
-    m_rhi->createImage(m_rhi->getSwapchainInfo().extent.width,
-                       m_rhi->getSwapchainInfo().extent.height,
-                       RHI_FORMAT_R8G8B8A8_UNORM,
-                       RHI_IMAGE_TILING_OPTIMAL,
-                       RHI_IMAGE_USAGE_STORAGE_BIT | RHI_IMAGE_USAGE_TRANSFER_DST_BIT,
-                       RHI_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                       m_dst_normal_image,
-                       m_dst_normal_image_memory,
-                       0,
-                       1,
-                       1);
+    bool res_begin_command_buffer = m_rhi->beginCommandBufferPFN(m_copy_command_buffer, &command_buffer_begin_info);
+    assert(RHI_SUCCESS == res_begin_command_buffer);
 
-    m_rhi->createImageView(m_dst_depth_image,
-                           m_rhi->getDepthImageInfo().depth_image_format,
-                           RHI_IMAGE_ASPECT_DEPTH_BIT,
-                           RHI_IMAGE_VIEW_TYPE_2D,
-                           1,
-                           1,
-                           m_src_depth_image_view);
+    auto copyImage = [&](RHIImage* src_image, RHIImage* dst_image, bool is_depth = true) {
+        RHIImageSubresourceRange subresourceRange = {static_cast<RHIImageAspectFlags>(is_depth ? RHI_IMAGE_ASPECT_DEPTH_BIT : RHI_IMAGE_ASPECT_COLOR_BIT), 0, 1, 0, 1};
+        RHIImageMemoryBarrier    imagememorybarrier {};
+        imagememorybarrier.sType               = RHI_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        imagememorybarrier.srcQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
+        imagememorybarrier.dstQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
+        imagememorybarrier.subresourceRange    = subresourceRange;
 
-    m_rhi->createImageView(m_dst_normal_image,
-                           RHI_FORMAT_R8G8B8A8_UNORM,
-                           RHI_IMAGE_ASPECT_COLOR_BIT,
-                           RHI_IMAGE_VIEW_TYPE_2D,
-                           1,
-                           1,
-                           m_src_normal_image_view);
-}
+        // 第一个 barrier：准备 dst 图像，确保转换为传输目标布局，为接受复制数据做准备
+        imagememorybarrier.oldLayout     = RHI_IMAGE_LAYOUT_UNDEFINED;
+        imagememorybarrier.newLayout     = RHI_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        imagememorybarrier.srcAccessMask = 0;
+        imagememorybarrier.dstAccessMask = RHI_ACCESS_TRANSFER_WRITE_BIT;
+        imagememorybarrier.image         = dst_image;
+        m_rhi->cmdPipelineBarrier(m_copy_command_buffer,
+                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                                  0,
+                                  0,
+                                  nullptr,
+                                  0,
+                                  nullptr,
+                                  1,
+                                  &imagememorybarrier);
 
-void ParticlePass::setupParticleDescriptorSet() {
-    for (int eid = 0; eid < m_emitter_count; ++eid) {
-        RHIDescriptorSetAllocateInfo particlebillboard_global_descriptor_set_alloc_info;
-        particlebillboard_global_descriptor_set_alloc_info.sType = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        particlebillboard_global_descriptor_set_alloc_info.pNext = NULL;
-        particlebillboard_global_descriptor_set_alloc_info.descriptorPool     = m_rhi->getDescriptorPool();
-        particlebillboard_global_descriptor_set_alloc_info.descriptorSetCount = 1;
-        particlebillboard_global_descriptor_set_alloc_info.pSetLayouts        = &m_descriptor_infos[2].layout;
+        // 第二个 barrier：准备 src 图像，确保转换为传输源布局，确保之前的深度写入操作完成
+        imagememorybarrier.oldLayout     = RHI_IMAGE_LAYOUT_UNDEFINED;
+        imagememorybarrier.newLayout     = RHI_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        imagememorybarrier.srcAccessMask = is_depth ? RHI_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
+                                                    : RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        imagememorybarrier.dstAccessMask = RHI_ACCESS_TRANSFER_READ_BIT;
+        imagememorybarrier.image         = src_image;
+        m_rhi->cmdPipelineBarrier(m_copy_command_buffer,
+                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                                  0,
+                                  0,
+                                  nullptr,
+                                  0,
+                                  nullptr,
+                                  1,
+                                  &imagememorybarrier);
 
-        if (RHI_SUCCESS != m_rhi->allocateDescriptorSets(&particlebillboard_global_descriptor_set_alloc_info,
-            m_descriptor_infos[eid * 3 + 2].descriptor_set))
-            throw std::runtime_error("allocate particle billboard global descriptor set");
+        // 执行图像复制操作
+        m_rhi->cmdCopyImageToImage(m_copy_command_buffer,
+                                   src_image,
+                                   is_depth ? RHI_IMAGE_ASPECT_DEPTH_BIT : RHI_IMAGE_ASPECT_COLOR_BIT,
+                                   dst_image,
+                                   is_depth ? RHI_IMAGE_ASPECT_DEPTH_BIT : RHI_IMAGE_ASPECT_COLOR_BIT,
+                                   m_rhi->getSwapchainInfo().extent.width,
+                                   m_rhi->getSwapchainInfo().extent.height);
 
-        RHIDescriptorBufferInfo particlebillboard_perframe_storage_buffer_info = {};
-        particlebillboard_perframe_storage_buffer_info.offset                  = 0;
-        particlebillboard_perframe_storage_buffer_info.range                   = RHI_WHOLE_SIZE;
-        particlebillboard_perframe_storage_buffer_info.buffer = m_particle_billboard_uniform_buffer;
+        // 第三个 barrier：转换 src 图像为深度模板附件或着色器只读布局
+        imagememorybarrier.oldLayout     = RHI_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        imagememorybarrier.newLayout     = is_depth ? RHI_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+                                                    : RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;;
+        imagememorybarrier.srcAccessMask = RHI_ACCESS_TRANSFER_WRITE_BIT;
+        imagememorybarrier.dstAccessMask = RHI_ACCESS_SHADER_READ_BIT | (is_depth ?
+                                           RHI_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT : RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT);
+        imagememorybarrier.image         = src_image;
+        m_rhi->cmdPipelineBarrier(m_copy_command_buffer,
+                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                                  0,
+                                  0,
+                                  nullptr,
+                                  0,
+                                  nullptr,
+                                  1,
+                                  &imagememorybarrier);
 
-        RHIDescriptorBufferInfo particlebillboard_perdrawcall_storage_buffer_info = {};
-        particlebillboard_perdrawcall_storage_buffer_info.offset                  = 0;
-        particlebillboard_perdrawcall_storage_buffer_info.range                   = RHI_WHOLE_SIZE;
-        particlebillboard_perdrawcall_storage_buffer_info.buffer =
-            m_emitter_buffer_batches[eid].m_position_render_buffer;
+        // 第四个 barrier：转换 dst 图像为着色器只读布局或通用布局
+        imagememorybarrier.oldLayout     = RHI_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        imagememorybarrier.newLayout     = is_depth ? RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL // depth 只用读
+                                                    : RHI_IMAGE_LAYOUT_GENERAL;                 // normal 可能需要支持读写
+        imagememorybarrier.srcAccessMask = RHI_ACCESS_TRANSFER_WRITE_BIT;
+        imagememorybarrier.dstAccessMask = RHI_ACCESS_SHADER_READ_BIT;
+        imagememorybarrier.image         = dst_image;
+        m_rhi->cmdPipelineBarrier(m_copy_command_buffer,
+                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                                  0,
+                                  0,
+                                  nullptr,
+                                  0,
+                                  nullptr,
+                                  1,
+                                  &imagememorybarrier);
+    };
 
-        RHIWriteDescriptorSet particlebillboard_descriptor_writes_info[3];
+    float color[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+    // copy depth image
+    m_rhi->pushEvent(m_copy_command_buffer, "Copy Depth Image for Particle", color);
+    copyImage(m_src_depth_image, m_dst_depth_image);
+    m_rhi->popEvent(m_copy_command_buffer);
 
-        particlebillboard_descriptor_writes_info[0].sType      = RHI_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        particlebillboard_descriptor_writes_info[0].pNext      = NULL;
-        particlebillboard_descriptor_writes_info[0].dstSet     = m_descriptor_infos[eid * 3 + 2].descriptor_set;
-        particlebillboard_descriptor_writes_info[0].dstBinding = 0;
-        particlebillboard_descriptor_writes_info[0].dstArrayElement = 0;
-        particlebillboard_descriptor_writes_info[0].descriptorType  = RHI_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        particlebillboard_descriptor_writes_info[0].descriptorCount = 1;
-        particlebillboard_descriptor_writes_info[0].pBufferInfo = &particlebillboard_perframe_storage_buffer_info;
+    // copy normal image
+    m_rhi->pushEvent(m_copy_command_buffer, "Copy Normal Image for Particle", color);
+    copyImage(m_src_normal_image, m_dst_normal_image, false);
+    m_rhi->popEvent(m_copy_command_buffer);
 
-        particlebillboard_descriptor_writes_info[1].sType      = RHI_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        particlebillboard_descriptor_writes_info[1].pNext      = NULL;
-        particlebillboard_descriptor_writes_info[1].dstSet     = m_descriptor_infos[eid * 3 + 2].descriptor_set;
-        particlebillboard_descriptor_writes_info[1].dstBinding = 1;
-        particlebillboard_descriptor_writes_info[1].dstArrayElement = 0;
-        particlebillboard_descriptor_writes_info[1].descriptorType  = RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        particlebillboard_descriptor_writes_info[1].descriptorCount = 1;
-        particlebillboard_descriptor_writes_info[1].pBufferInfo =
-            &particlebillboard_perdrawcall_storage_buffer_info;
+    bool res_end_command_buffer = m_rhi->endCommandBufferPFN(m_copy_command_buffer);
+    assert(RHI_SUCCESS == res_end_command_buffer);
 
-        RHISampler*          sampler;
-        RHISamplerCreateInfo samplerCreateInfo {};
-        samplerCreateInfo.sType            = RHI_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        samplerCreateInfo.maxAnisotropy    = 1.0f;
-        samplerCreateInfo.anisotropyEnable = true;
-        samplerCreateInfo.magFilter        = RHI_FILTER_LINEAR;
-        samplerCreateInfo.minFilter        = RHI_FILTER_LINEAR;
-        samplerCreateInfo.mipmapMode       = RHI_SAMPLER_MIPMAP_MODE_LINEAR;
-        samplerCreateInfo.addressModeU     = RHI_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerCreateInfo.addressModeV     = RHI_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerCreateInfo.addressModeW     = RHI_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerCreateInfo.mipLodBias       = 0.0f;
-        samplerCreateInfo.compareOp        = RHI_COMPARE_OP_NEVER;
-        samplerCreateInfo.minLod           = 0.0f;
-        samplerCreateInfo.maxLod           = 0.0f;
-        samplerCreateInfo.borderColor      = RHI_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        if (RHI_SUCCESS != m_rhi->createSampler(&samplerCreateInfo, sampler))
-            throw std::runtime_error("create sampler error");
+    bool res_reset_fences = m_rhi->resetFencesPFN(1, &m_rhi->getFenceList()[index]);
+    assert(RHI_SUCCESS == res_reset_fences);
 
-        RHIDescriptorImageInfo particle_texture_image_info = {};
-        particle_texture_image_info.sampler                = sampler;
-        particle_texture_image_info.imageView              = m_particle_billboard_texture_image_view;
-        particle_texture_image_info.imageLayout            = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    RHIPipelineStageFlags wait_stages[] = {RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    RHISubmitInfo         submit_info   = {};
+    submit_info.sType                   = RHI_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_info.waitSemaphoreCount      = 1;
+    submit_info.pWaitSemaphores         = &(m_rhi->getTextureCopySemaphore(index));
+    submit_info.pWaitDstStageMask       = wait_stages;
+    submit_info.commandBufferCount      = 1;
+    submit_info.pCommandBuffers         = &m_copy_command_buffer;
+    submit_info.signalSemaphoreCount    = 0;
+    submit_info.pSignalSemaphores       = nullptr;
+    bool res_queue_submit =
+        m_rhi->queueSubmit(m_rhi->getGraphicsQueue(), 1, &submit_info, m_rhi->getFenceList()[index]);
+    assert(RHI_SUCCESS == res_queue_submit);
 
-        particlebillboard_descriptor_writes_info[2].sType      = RHI_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        particlebillboard_descriptor_writes_info[2].pNext      = NULL;
-        particlebillboard_descriptor_writes_info[2].dstSet     = m_descriptor_infos[eid * 3 + 2].descriptor_set;
-        particlebillboard_descriptor_writes_info[2].dstBinding = 2;
-        particlebillboard_descriptor_writes_info[2].dstArrayElement = 0;
-        particlebillboard_descriptor_writes_info[2].descriptorType  = RHI_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        particlebillboard_descriptor_writes_info[2].descriptorCount = 1;
-        particlebillboard_descriptor_writes_info[2].pImageInfo      = &particle_texture_image_info;
-
-        m_rhi->updateDescriptorSets(3, particlebillboard_descriptor_writes_info, 0, NULL);
-    }
-}
-
-void ParticlePass::setEmitterCount(int count) {
-    for (int i = 0; i < m_emitter_buffer_batches.size(); ++i)
-        m_emitter_buffer_batches[i].freeUpBatch(m_rhi);
-
-    m_emitter_count = count;
-    m_emitter_buffer_batches.resize(m_emitter_count);
+    m_rhi->queueWaitIdle(m_rhi->getGraphicsQueue());
 }
 
 void ParticlePass::createEmitter(int id, const ParticleEmitterDesc &desc) {
@@ -548,6 +527,7 @@ void ParticlePass::createEmitter(int id, const ParticleEmitterDesc &desc) {
 
     RHIFence*       fence = nullptr;
     ParticleCounter counterNext {};
+    // fill in data of ParticleCounter
     {
         m_rhi->createBufferAndInitialize(RHI_BUFFER_USAGE_TRANSFER_SRC_BIT | RHI_BUFFER_USAGE_TRANSFER_DST_BIT,
                                          RHI_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
@@ -626,7 +606,7 @@ void ParticlePass::createEmitter(int id, const ParticleEmitterDesc &desc) {
     const VkDeviceSize staggingBufferSize        = s_max_particles * sizeof(Particle);
     m_emitter_buffer_batches[id].m_emitter_desc = desc;
 
-    // fill in data
+    // fill in data of ParticleEmitterDesc
     {
         m_rhi->createBufferAndInitialize(RHI_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                                          RHI_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
@@ -728,6 +708,11 @@ void ParticlePass::initializeEmitters() {
     setupParticleDescriptorSet();
 }
 
+void ParticlePass::setDepthAndNormalImage(RHIImage* depth_image, RHIImage* normal_image) {
+    m_src_depth_image  = depth_image;
+    m_src_normal_image = normal_image;
+}
+
 void ParticlePass::setupParticlePass() {
     prepareUniformBuffer();
     setupDescriptorSetLayout();
@@ -751,11 +736,127 @@ void ParticlePass::setupParticlePass() {
         throw std::runtime_error("create fence");
 }
 
-void ParticlePass::initialize(const RenderPassInitInfo* init_info) {
-    RenderPass::initialize(nullptr);
+void ParticlePass::setRenderCommandBufferHandle(RHICommandBuffer* command_buffer) {
+    m_render_command_buffer = command_buffer;
+}
 
-    const ParticlePassInitInfo* _init_info = static_cast<const ParticlePassInitInfo*>(init_info);
-    m_particle_manager                     = _init_info->m_particle_manager;
+void ParticlePass::setRenderPassHandle(RHIRenderPass* render_pass) { m_render_pass = render_pass; }
+
+void ParticlePass::setEmitterCount(int count) {
+    for (int i = 0; i < m_emitter_buffer_batches.size(); ++i)
+        m_emitter_buffer_batches[i].freeUpBatch(m_rhi);
+
+    m_emitter_count = count;
+    m_emitter_buffer_batches.resize(m_emitter_count);
+}
+
+void ParticlePass::setTickIndices(const std::vector<ParticleEmitterID> &tick_indices) {
+    m_emitter_tick_indices = tick_indices;
+}
+
+void ParticlePass::setTransformIndices(const std::vector<ParticleEmitterTransformDesc> &transform_indices) {
+    m_emitter_transform_indices = transform_indices;
+}
+
+void ParticlePass::updateUniformBuffer() {
+    std::random_device r;
+    std::seed_seq      seed {r()};
+    m_random_engine.seed(seed);
+    float rnd0 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
+    float rnd1 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
+    float rnd2 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
+    m_ubo.pack = Vector4 {rnd0, rnd1, rnd2, static_cast<float>(m_rhi->getCurrentFrameIndex())};
+
+    m_ubo.viewport.x = m_rhi->getSwapchainInfo().viewport->x;
+    m_ubo.viewport.y = m_rhi->getSwapchainInfo().viewport->y;
+    m_ubo.viewport.z = m_rhi->getSwapchainInfo().viewport->width;
+    m_ubo.viewport.w = m_rhi->getSwapchainInfo().viewport->height;
+    m_ubo.extent.x   = m_rhi->getSwapchainInfo().scissor->extent.width;
+    m_ubo.extent.y   = m_rhi->getSwapchainInfo().scissor->extent.height;
+
+    m_ubo.extent.z = g_runtime_global_context.m_render_system->getRenderCamera()->m_znear;
+    m_ubo.extent.w = g_runtime_global_context.m_render_system->getRenderCamera()->m_zfar;
+    memcpy(m_particle_compute_buffer_mapped, &m_ubo, sizeof(m_ubo));
+}
+
+void ParticlePass::updateEmitterTransform() {
+    for (ParticleEmitterTransformDesc &transform_desc : m_emitter_transform_indices) {
+        int index                                                 = transform_desc.m_id;
+        m_emitter_buffer_batches[index].m_emitter_desc.m_position = transform_desc.m_position;
+        m_emitter_buffer_batches[index].m_emitter_desc.m_rotation = transform_desc.m_rotation;
+
+        memcpy(m_emitter_buffer_batches[index].m_emitter_desc_mapped,
+               &m_emitter_buffer_batches[index].m_emitter_desc,
+               sizeof(ParticleEmitterDesc));
+    }
+}
+
+void ParticlePass::setupAttachments() {
+    // billboard texture
+    {
+        std::shared_ptr<TextureData> m_particle_billboard_texture_resource = m_render_resource->loadTextureHDR(
+                m_particle_manager->getGlobalParticleRes().m_particle_billboard_texture_path);
+        m_rhi->createGlobalImage(m_particle_billboard_texture_image,
+                                 m_particle_billboard_texture_image_view,
+                                 m_particle_billboard_texture_vma_allocation,
+                                 m_particle_billboard_texture_resource->m_width,
+                                 m_particle_billboard_texture_resource->m_height,
+                                 m_particle_billboard_texture_resource->m_pixels,
+                                 m_particle_billboard_texture_resource->m_format);
+    }
+
+    // piccolo texture
+    {
+        std::shared_ptr<TextureData> m_piccolo_logo_texture_resource = m_render_resource->loadTexture(
+                m_particle_manager->getGlobalParticleRes().m_piccolo_logo_texture_path, true);
+        m_rhi->createGlobalImage(m_piccolo_logo_texture_image,
+                                 m_piccolo_logo_texture_image_view,
+                                 m_piccolo_logo_texture_vma_allocation,
+                                 m_piccolo_logo_texture_resource->m_width,
+                                 m_piccolo_logo_texture_resource->m_height,
+                                 m_piccolo_logo_texture_resource->m_pixels,
+                                 m_piccolo_logo_texture_resource->m_format);
+    }
+
+    m_rhi->createImage(m_rhi->getSwapchainInfo().extent.width,
+                       m_rhi->getSwapchainInfo().extent.height,
+                       m_rhi->getDepthImageInfo().depth_image_format,
+                       RHI_IMAGE_TILING_OPTIMAL,
+                       RHI_IMAGE_USAGE_SAMPLED_BIT | RHI_IMAGE_USAGE_TRANSFER_DST_BIT,
+                       RHI_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                       m_dst_depth_image,
+                       m_dst_depth_image_memory,
+                       0,
+                       1,
+                       1);
+
+    m_rhi->createImage(m_rhi->getSwapchainInfo().extent.width,
+                       m_rhi->getSwapchainInfo().extent.height,
+                       RHI_FORMAT_R8G8B8A8_UNORM,
+                       RHI_IMAGE_TILING_OPTIMAL,
+                       RHI_IMAGE_USAGE_STORAGE_BIT | RHI_IMAGE_USAGE_TRANSFER_DST_BIT,
+                       RHI_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                       m_dst_normal_image,
+                       m_dst_normal_image_memory,
+                       0,
+                       1,
+                       1);
+
+    m_rhi->createImageView(m_dst_depth_image,
+                           m_rhi->getDepthImageInfo().depth_image_format,
+                           RHI_IMAGE_ASPECT_DEPTH_BIT,
+                           RHI_IMAGE_VIEW_TYPE_2D,
+                           1,
+                           1,
+                           m_src_depth_image_view);
+
+    m_rhi->createImageView(m_dst_normal_image,
+                           RHI_FORMAT_R8G8B8A8_UNORM,
+                           RHI_IMAGE_ASPECT_COLOR_BIT,
+                           RHI_IMAGE_VIEW_TYPE_2D,
+                           1,
+                           1,
+                           m_src_normal_image_view);
 }
 
 void ParticlePass::setupDescriptorSetLayout() {
@@ -1158,6 +1259,148 @@ void ParticlePass::setupPipelines() {
     }
 }
 
+void ParticlePass::setupParticleDescriptorSet() {
+    for (int eid = 0; eid < m_emitter_count; ++eid) {
+        RHIDescriptorSetAllocateInfo particlebillboard_global_descriptor_set_alloc_info;
+        particlebillboard_global_descriptor_set_alloc_info.sType = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        particlebillboard_global_descriptor_set_alloc_info.pNext = NULL;
+        particlebillboard_global_descriptor_set_alloc_info.descriptorPool     = m_rhi->getDescriptorPool();
+        particlebillboard_global_descriptor_set_alloc_info.descriptorSetCount = 1;
+        particlebillboard_global_descriptor_set_alloc_info.pSetLayouts        = &m_descriptor_infos[2].layout;
+
+        if (RHI_SUCCESS != m_rhi->allocateDescriptorSets(&particlebillboard_global_descriptor_set_alloc_info,
+            m_descriptor_infos[eid * 3 + 2].descriptor_set))
+            throw std::runtime_error("allocate particle billboard global descriptor set");
+
+        RHIDescriptorBufferInfo particlebillboard_perframe_storage_buffer_info = {};
+        particlebillboard_perframe_storage_buffer_info.offset                  = 0;
+        particlebillboard_perframe_storage_buffer_info.range                   = RHI_WHOLE_SIZE;
+        particlebillboard_perframe_storage_buffer_info.buffer = m_particle_billboard_uniform_buffer;
+
+        RHIDescriptorBufferInfo particlebillboard_perdrawcall_storage_buffer_info = {};
+        particlebillboard_perdrawcall_storage_buffer_info.offset                  = 0;
+        particlebillboard_perdrawcall_storage_buffer_info.range                   = RHI_WHOLE_SIZE;
+        particlebillboard_perdrawcall_storage_buffer_info.buffer =
+            m_emitter_buffer_batches[eid].m_position_render_buffer;
+
+        RHIWriteDescriptorSet particlebillboard_descriptor_writes_info[3];
+
+        particlebillboard_descriptor_writes_info[0].sType      = RHI_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        particlebillboard_descriptor_writes_info[0].pNext      = NULL;
+        particlebillboard_descriptor_writes_info[0].dstSet     = m_descriptor_infos[eid * 3 + 2].descriptor_set;
+        particlebillboard_descriptor_writes_info[0].dstBinding = 0;
+        particlebillboard_descriptor_writes_info[0].dstArrayElement = 0;
+        particlebillboard_descriptor_writes_info[0].descriptorType  = RHI_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        particlebillboard_descriptor_writes_info[0].descriptorCount = 1;
+        particlebillboard_descriptor_writes_info[0].pBufferInfo = &particlebillboard_perframe_storage_buffer_info;
+
+        particlebillboard_descriptor_writes_info[1].sType      = RHI_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        particlebillboard_descriptor_writes_info[1].pNext      = NULL;
+        particlebillboard_descriptor_writes_info[1].dstSet     = m_descriptor_infos[eid * 3 + 2].descriptor_set;
+        particlebillboard_descriptor_writes_info[1].dstBinding = 1;
+        particlebillboard_descriptor_writes_info[1].dstArrayElement = 0;
+        particlebillboard_descriptor_writes_info[1].descriptorType  = RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        particlebillboard_descriptor_writes_info[1].descriptorCount = 1;
+        particlebillboard_descriptor_writes_info[1].pBufferInfo =
+            &particlebillboard_perdrawcall_storage_buffer_info;
+
+        RHISampler*          sampler;
+        RHISamplerCreateInfo samplerCreateInfo {};
+        samplerCreateInfo.sType            = RHI_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        samplerCreateInfo.maxAnisotropy    = 1.0f;
+        samplerCreateInfo.anisotropyEnable = true;
+        samplerCreateInfo.magFilter        = RHI_FILTER_LINEAR;
+        samplerCreateInfo.minFilter        = RHI_FILTER_LINEAR;
+        samplerCreateInfo.mipmapMode       = RHI_SAMPLER_MIPMAP_MODE_LINEAR;
+        samplerCreateInfo.addressModeU     = RHI_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerCreateInfo.addressModeV     = RHI_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerCreateInfo.addressModeW     = RHI_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerCreateInfo.mipLodBias       = 0.0f;
+        samplerCreateInfo.compareOp        = RHI_COMPARE_OP_NEVER;
+        samplerCreateInfo.minLod           = 0.0f;
+        samplerCreateInfo.maxLod           = 0.0f;
+        samplerCreateInfo.borderColor      = RHI_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+        if (RHI_SUCCESS != m_rhi->createSampler(&samplerCreateInfo, sampler))
+            throw std::runtime_error("create sampler error");
+
+        RHIDescriptorImageInfo particle_texture_image_info = {};
+        particle_texture_image_info.sampler                = sampler;
+        particle_texture_image_info.imageView              = m_particle_billboard_texture_image_view;
+        particle_texture_image_info.imageLayout            = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        particlebillboard_descriptor_writes_info[2].sType      = RHI_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        particlebillboard_descriptor_writes_info[2].pNext      = NULL;
+        particlebillboard_descriptor_writes_info[2].dstSet     = m_descriptor_infos[eid * 3 + 2].descriptor_set;
+        particlebillboard_descriptor_writes_info[2].dstBinding = 2;
+        particlebillboard_descriptor_writes_info[2].dstArrayElement = 0;
+        particlebillboard_descriptor_writes_info[2].descriptorType  = RHI_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        particlebillboard_descriptor_writes_info[2].descriptorCount = 1;
+        particlebillboard_descriptor_writes_info[2].pImageInfo      = &particle_texture_image_info;
+
+        m_rhi->updateDescriptorSets(3, particlebillboard_descriptor_writes_info, 0, NULL);
+    }
+}
+
+void ParticlePass::prepareUniformBuffer() {
+    RHIDeviceMemory* d_mem;
+    m_rhi->createBuffer(sizeof(m_particle_collision_perframe_storage_buffer_object),
+                        RHI_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                        RHI_MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                        m_scene_uniform_buffer,
+                        d_mem);
+
+    if (RHI_SUCCESS != m_rhi->mapMemory(d_mem, 0, RHI_WHOLE_SIZE, 0, &m_scene_uniform_buffer_mapped))
+        throw std::runtime_error("map billboard uniform buffer");
+    RHIDeviceMemory* d_uniformdmemory;
+
+    m_rhi->createBufferAndInitialize(RHI_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                     RHI_MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                     m_compute_uniform_buffer,
+                                     d_uniformdmemory,
+                                     sizeof(m_ubo));
+
+    if (RHI_SUCCESS != m_rhi->mapMemory(d_uniformdmemory, 0, RHI_WHOLE_SIZE, 0, &m_particle_compute_buffer_mapped))
+        throw std::runtime_error("map buffer");
+
+    const GlobalParticleRes &global_res = m_particle_manager->getGlobalParticleRes();
+
+    m_ubo.emit_gap  = global_res.m_emit_gap;
+    m_ubo.time_step = global_res.m_time_step;
+    m_ubo.max_life  = global_res.m_max_life;
+    m_ubo.gravity   = global_res.m_gravity;
+    std::random_device r;
+    std::seed_seq      seed {r()};
+    m_random_engine.seed(seed);
+    float rnd0        = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
+    float rnd1        = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
+    float rnd2        = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
+    m_ubo.pack        = Vector4 {rnd0, static_cast<float>(m_rhi->getCurrentFrameIndex()), rnd1, rnd2};
+    m_ubo.xemit_count = 100000;
+
+    m_viewport_params = *m_rhi->getSwapchainInfo().viewport;
+    m_ubo.viewport.x  = m_viewport_params.x;
+    m_ubo.viewport.y  = m_viewport_params.y;
+    m_ubo.viewport.z  = m_viewport_params.width;
+    m_ubo.viewport.w  = m_viewport_params.height;
+    m_ubo.extent.x    = m_rhi->getSwapchainInfo().scissor->extent.width;
+    m_ubo.extent.y    = m_rhi->getSwapchainInfo().scissor->extent.height;
+
+    memcpy(m_particle_compute_buffer_mapped, &m_ubo, sizeof(m_ubo));
+
+    {
+        RHIDeviceMemory* d_mem;
+        m_rhi->createBuffer(sizeof(m_particlebillboard_perframe_storage_buffer_object),
+                            RHI_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                            RHI_MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                            m_particle_billboard_uniform_buffer,
+                            d_mem);
+
+        if (RHI_SUCCESS !=
+            m_rhi->mapMemory(d_mem, 0, RHI_WHOLE_SIZE, 0, &m_particle_billboard_uniform_buffer_mapped))
+            throw std::runtime_error("map billboard uniform buffer");
+    }
+}
+
 void ParticlePass::allocateDescriptorSet() {
     RHIDescriptorSetAllocateInfo particle_descriptor_set_alloc_info;
     particle_descriptor_set_alloc_info.sType          = RHI_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -1428,453 +1671,5 @@ void ParticlePass::updateDescriptorSet() {
                                         NULL);
         }
     }
-}
-
-void ParticlePass::simulate() {
-    for (auto i : m_emitter_tick_indices) {
-        RHICommandBufferBeginInfo cmdBufInfo {};
-        cmdBufInfo.sType = RHI_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-        // particle compute pass
-        if (RHI_SUCCESS != m_rhi->beginCommandBuffer(m_compute_command_buffer, &cmdBufInfo))
-            throw std::runtime_error("begin command buffer");
-
-        float color[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-        m_rhi->pushEvent(m_compute_command_buffer, "Particle compute", color);
-        m_rhi->pushEvent(m_compute_command_buffer, "Particle Kickoff", color);
-
-        m_rhi->cmdBindPipelinePFN(m_compute_command_buffer, RHI_PIPELINE_BIND_POINT_COMPUTE, m_kickoff_pipeline);
-        RHIDescriptorSet* descriptorsets[2] = {m_descriptor_infos[i * 3].descriptor_set,
-                                               m_descriptor_infos[i * 3 + 1].descriptor_set
-                                              };
-        m_rhi->cmdBindDescriptorSetsPFN(m_compute_command_buffer,
-                                        RHI_PIPELINE_BIND_POINT_COMPUTE,
-                                        m_render_pipelines[0].layout,
-                                        0,
-                                        2,
-                                        descriptorsets,
-                                        0,
-                                        0);
-
-
-        m_rhi->cmdDispatch(m_compute_command_buffer, 1, 1, 1);
-
-        m_rhi->popEvent(m_compute_command_buffer); // end particle kickoff label
-
-        RHIBufferMemoryBarrier bufferBarrier {};
-        bufferBarrier.sType               = RHI_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-        bufferBarrier.buffer              = m_emitter_buffer_batches[i].m_counter_device_buffer;
-        bufferBarrier.size                = RHI_WHOLE_SIZE;
-        bufferBarrier.srcAccessMask       = RHI_ACCESS_SHADER_WRITE_BIT;
-        bufferBarrier.dstAccessMask       = RHI_ACCESS_SHADER_READ_BIT;
-        bufferBarrier.srcQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
-        bufferBarrier.dstQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
-
-        m_rhi->cmdPipelineBarrier(m_compute_command_buffer,
-                                  RHI_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  0,
-                                  0,
-                                  nullptr,
-                                  1,
-                                  &bufferBarrier,
-                                  0,
-                                  nullptr);
-
-        bufferBarrier.buffer              = m_emitter_buffer_batches[i].m_indirect_dispatch_argument_buffer;
-        bufferBarrier.size                = RHI_WHOLE_SIZE;
-        bufferBarrier.srcAccessMask       = RHI_ACCESS_SHADER_WRITE_BIT;
-        bufferBarrier.dstAccessMask       = RHI_ACCESS_INDIRECT_COMMAND_READ_BIT | RHI_ACCESS_SHADER_READ_BIT;
-        bufferBarrier.srcQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
-        bufferBarrier.dstQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
-
-        m_rhi->cmdPipelineBarrier(m_compute_command_buffer,
-                                  RHI_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  0,
-                                  0,
-                                  nullptr,
-                                  1,
-                                  &bufferBarrier,
-                                  0,
-                                  nullptr);
-
-        m_rhi->pushEvent(m_compute_command_buffer, "Particle Emit", color);
-
-        m_rhi->cmdBindPipelinePFN(m_compute_command_buffer, RHI_PIPELINE_BIND_POINT_COMPUTE, m_emit_pipeline);
-
-        m_rhi->cmdDispatchIndirect(m_compute_command_buffer,
-                                   m_emitter_buffer_batches[i].m_indirect_dispatch_argument_buffer,
-                                   s_argument_offset_emit);
-
-        m_rhi->popEvent(m_compute_command_buffer); // end particle emit label
-
-        bufferBarrier.buffer              = m_emitter_buffer_batches[i].m_position_device_buffer;
-        bufferBarrier.size                = RHI_WHOLE_SIZE;
-        bufferBarrier.srcAccessMask       = RHI_ACCESS_SHADER_WRITE_BIT;
-        bufferBarrier.dstAccessMask       = RHI_ACCESS_SHADER_READ_BIT;
-        bufferBarrier.srcQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
-        bufferBarrier.dstQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
-
-        m_rhi->cmdPipelineBarrier(m_compute_command_buffer,
-                                  RHI_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  0,
-                                  0,
-                                  nullptr,
-                                  1,
-                                  &bufferBarrier,
-                                  0,
-                                  nullptr);
-
-        bufferBarrier.buffer              = m_emitter_buffer_batches[i].m_position_render_buffer;
-        bufferBarrier.size                = RHI_WHOLE_SIZE;
-        bufferBarrier.srcAccessMask       = RHI_ACCESS_SHADER_WRITE_BIT;
-        bufferBarrier.dstAccessMask       = RHI_ACCESS_SHADER_READ_BIT;
-        bufferBarrier.srcQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
-        bufferBarrier.dstQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
-
-        m_rhi->cmdPipelineBarrier(m_compute_command_buffer,
-                                  RHI_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  0,
-                                  0,
-                                  nullptr,
-                                  1,
-                                  &bufferBarrier,
-                                  0,
-                                  nullptr);
-
-        bufferBarrier.buffer              = m_emitter_buffer_batches[i].m_counter_device_buffer;
-        bufferBarrier.size                = RHI_WHOLE_SIZE;
-        bufferBarrier.srcAccessMask       = RHI_ACCESS_SHADER_WRITE_BIT;
-        bufferBarrier.dstAccessMask       = RHI_ACCESS_SHADER_READ_BIT;
-        bufferBarrier.srcQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
-        bufferBarrier.dstQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
-
-        m_rhi->cmdPipelineBarrier(m_compute_command_buffer,
-                                  RHI_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  0,
-                                  0,
-                                  nullptr,
-                                  1,
-                                  &bufferBarrier,
-                                  0,
-                                  nullptr);
-
-        bufferBarrier.buffer              = m_emitter_buffer_batches[i].m_alive_list_buffer;
-        bufferBarrier.size                = RHI_WHOLE_SIZE;
-        bufferBarrier.srcAccessMask       = RHI_ACCESS_SHADER_WRITE_BIT;
-        bufferBarrier.dstAccessMask       = RHI_ACCESS_SHADER_READ_BIT;
-        bufferBarrier.srcQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
-        bufferBarrier.dstQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
-
-        m_rhi->cmdPipelineBarrier(m_compute_command_buffer,
-                                  RHI_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  0,
-                                  0,
-                                  nullptr,
-                                  1,
-                                  &bufferBarrier,
-                                  0,
-                                  nullptr);
-
-        bufferBarrier.buffer              = m_emitter_buffer_batches[i].m_dead_list_buffer;
-        bufferBarrier.size                = RHI_WHOLE_SIZE;
-        bufferBarrier.srcAccessMask       = RHI_ACCESS_SHADER_WRITE_BIT;
-        bufferBarrier.dstAccessMask       = RHI_ACCESS_SHADER_READ_BIT;
-        bufferBarrier.srcQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
-        bufferBarrier.dstQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
-
-        m_rhi->cmdPipelineBarrier(m_compute_command_buffer,
-                                  RHI_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  0,
-                                  0,
-                                  nullptr,
-                                  1,
-                                  &bufferBarrier,
-                                  0,
-                                  nullptr);
-
-        bufferBarrier.buffer              = m_emitter_buffer_batches[i].m_alive_list_next_buffer;
-        bufferBarrier.size                = RHI_WHOLE_SIZE;
-        bufferBarrier.srcAccessMask       = RHI_ACCESS_SHADER_WRITE_BIT;
-        bufferBarrier.dstAccessMask       = RHI_ACCESS_SHADER_READ_BIT;
-        bufferBarrier.srcQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
-        bufferBarrier.dstQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
-
-        m_rhi->cmdPipelineBarrier(m_compute_command_buffer,
-                                  RHI_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                  RHI_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                                  0,
-                                  0,
-                                  nullptr,
-                                  1,
-                                  &bufferBarrier,
-                                  0,
-                                  nullptr);
-
-        m_rhi->pushEvent(m_compute_command_buffer, "Particle Simulate", color);
-
-        m_rhi->cmdBindPipelinePFN(m_compute_command_buffer, RHI_PIPELINE_BIND_POINT_COMPUTE, m_simulate_pipeline);
-        m_rhi->cmdDispatchIndirect(m_compute_command_buffer,
-                                   m_emitter_buffer_batches[i].m_indirect_dispatch_argument_buffer,
-                                   s_argument_offset_simulate);
-
-        m_rhi->popEvent(m_compute_command_buffer); // end particle simulate label
-
-        if (RHI_SUCCESS != m_rhi->endCommandBuffer(m_compute_command_buffer))
-            throw std::runtime_error("end command buffer");
-        m_rhi->resetFencesPFN(1, &m_fence);
-
-        RHISubmitInfo computeSubmitInfo {};
-        computeSubmitInfo.sType              = RHI_STRUCTURE_TYPE_SUBMIT_INFO;
-        computeSubmitInfo.pWaitDstStageMask  = 0;
-        computeSubmitInfo.commandBufferCount = 1;
-        computeSubmitInfo.pCommandBuffers    = &m_compute_command_buffer;
-
-        if (RHI_SUCCESS != m_rhi->queueSubmit(m_rhi->getComputeQueue(), 1, &computeSubmitInfo, m_fence))
-            throw std::runtime_error("compute queue submit");
-
-        if (RHI_SUCCESS != m_rhi->waitForFencesPFN(1, &m_fence, RHI_TRUE, UINT64_MAX))
-            throw std::runtime_error("wait for fence");
-
-        if (RHI_SUCCESS != m_rhi->beginCommandBuffer(m_compute_command_buffer, &cmdBufInfo))
-            throw std::runtime_error("begin command buffer");
-
-        m_rhi->pushEvent(m_compute_command_buffer, "Copy Particle Counter Buffer", color);
-
-        // Barrier to ensure that shader writes are finished before buffer is read back from GPU
-        bufferBarrier.srcAccessMask       = RHI_ACCESS_SHADER_WRITE_BIT;
-        bufferBarrier.dstAccessMask       = RHI_ACCESS_TRANSFER_READ_BIT;
-        bufferBarrier.buffer              = m_emitter_buffer_batches[i].m_counter_device_buffer;
-        bufferBarrier.size                = RHI_WHOLE_SIZE;
-        bufferBarrier.srcQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
-        bufferBarrier.dstQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
-
-        m_rhi->cmdPipelineBarrier(m_compute_command_buffer,
-                                  RHI_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                  RHI_PIPELINE_STAGE_TRANSFER_BIT,
-                                  0,
-                                  0,
-                                  nullptr,
-                                  1,
-                                  &bufferBarrier,
-                                  0,
-                                  nullptr);
-        // Read back to host visible buffer
-
-        RHIBufferCopy copyRegion {};
-        copyRegion.srcOffset = 0;
-        copyRegion.dstOffset = 0;
-        copyRegion.size      = sizeof(ParticleCounter);
-
-        m_rhi->cmdCopyBuffer(m_compute_command_buffer,
-                             m_emitter_buffer_batches[i].m_counter_device_buffer,
-                             m_emitter_buffer_batches[i].m_counter_host_buffer,
-                             1,
-                             &copyRegion);
-
-        // Barrier to ensure that buffer copy is finished before host reading from it
-        bufferBarrier.srcAccessMask       = RHI_ACCESS_TRANSFER_WRITE_BIT;
-        bufferBarrier.dstAccessMask       = RHI_ACCESS_HOST_READ_BIT;
-        bufferBarrier.buffer              = m_emitter_buffer_batches[i].m_counter_host_buffer;
-        bufferBarrier.size                = RHI_WHOLE_SIZE;
-        bufferBarrier.srcQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
-        bufferBarrier.dstQueueFamilyIndex = RHI_QUEUE_FAMILY_IGNORED;
-
-        m_rhi->cmdPipelineBarrier(m_compute_command_buffer,
-                                  RHI_PIPELINE_STAGE_TRANSFER_BIT,
-                                  RHI_PIPELINE_STAGE_HOST_BIT,
-                                  0,
-                                  0,
-                                  nullptr,
-                                  1,
-                                  &bufferBarrier,
-                                  0,
-                                  nullptr);
-
-        m_rhi->popEvent(m_compute_command_buffer); // end particle counter copy label
-
-        m_rhi->popEvent(m_compute_command_buffer); // end particle compute label
-
-        if (RHI_SUCCESS != m_rhi->endCommandBuffer(m_compute_command_buffer))
-            throw std::runtime_error("end command buffer");
-
-        // Submit compute work
-        m_rhi->resetFencesPFN(1, &m_fence);
-        computeSubmitInfo                        = {};
-        const VkPipelineStageFlags waitStageMask = RHI_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-        computeSubmitInfo.sType                  = RHI_STRUCTURE_TYPE_SUBMIT_INFO;
-        computeSubmitInfo.pWaitDstStageMask      = &waitStageMask;
-        computeSubmitInfo.commandBufferCount     = 1;
-        computeSubmitInfo.pCommandBuffers        = &m_compute_command_buffer;
-
-        if (RHI_SUCCESS != m_rhi->queueSubmit(m_rhi->getComputeQueue(), 1, &computeSubmitInfo, m_fence))
-            throw std::runtime_error("compute queue submit");
-
-        if (RHI_SUCCESS != m_rhi->waitForFencesPFN(1, &m_fence, RHI_TRUE, UINT64_MAX))
-            throw std::runtime_error("wait for fence");
-
-        m_rhi->queueWaitIdle(m_rhi->getComputeQueue());
-
-        // Make device writes visible to the host
-        void* mapped;
-        m_rhi->mapMemory(m_emitter_buffer_batches[i].m_counter_host_memory, 0, RHI_WHOLE_SIZE, 0, &mapped);
-
-        m_rhi->invalidateMappedMemoryRanges(
-            nullptr, m_emitter_buffer_batches[i].m_counter_host_memory, 0, RHI_WHOLE_SIZE);
-
-        // Copy to output
-        ParticleCounter counterNext {};
-        memcpy(&counterNext, mapped, sizeof(ParticleCounter));
-        m_rhi->unmapMemory(m_emitter_buffer_batches[i].m_counter_host_memory);
-
-        if constexpr (s_verbose_particle_alive_info)
-            LOG_INFO("{} {} {} {}",
-                     counterNext.dead_count,
-                     counterNext.alive_count,
-                     counterNext.alive_count_after_sim,
-                     counterNext.emit_count);
-        m_emitter_buffer_batches[i].m_num_particle = counterNext.alive_count_after_sim;
-    }
-    m_emitter_tick_indices.clear();
-    m_emitter_transform_indices.clear();
-}
-
-void ParticlePass::prepareUniformBuffer() {
-    RHIDeviceMemory* d_mem;
-    m_rhi->createBuffer(sizeof(m_particle_collision_perframe_storage_buffer_object),
-                        RHI_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                        RHI_MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                        m_scene_uniform_buffer,
-                        d_mem);
-
-    if (RHI_SUCCESS != m_rhi->mapMemory(d_mem, 0, RHI_WHOLE_SIZE, 0, &m_scene_uniform_buffer_mapped))
-        throw std::runtime_error("map billboard uniform buffer");
-    RHIDeviceMemory* d_uniformdmemory;
-
-    m_rhi->createBufferAndInitialize(RHI_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                     RHI_MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                     m_compute_uniform_buffer,
-                                     d_uniformdmemory,
-                                     sizeof(m_ubo));
-
-    if (RHI_SUCCESS != m_rhi->mapMemory(d_uniformdmemory, 0, RHI_WHOLE_SIZE, 0, &m_particle_compute_buffer_mapped))
-        throw std::runtime_error("map buffer");
-
-    const GlobalParticleRes &global_res = m_particle_manager->getGlobalParticleRes();
-
-    m_ubo.emit_gap  = global_res.m_emit_gap;
-    m_ubo.time_step = global_res.m_time_step;
-    m_ubo.max_life  = global_res.m_max_life;
-    m_ubo.gravity   = global_res.m_gravity;
-    std::random_device r;
-    std::seed_seq      seed {r()};
-    m_random_engine.seed(seed);
-    float rnd0        = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
-    float rnd1        = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
-    float rnd2        = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
-    m_ubo.pack        = Vector4 {rnd0, static_cast<float>(m_rhi->getCurrentFrameIndex()), rnd1, rnd2};
-    m_ubo.xemit_count = 100000;
-
-    m_viewport_params = *m_rhi->getSwapchainInfo().viewport;
-    m_ubo.viewport.x  = m_viewport_params.x;
-    m_ubo.viewport.y  = m_viewport_params.y;
-    m_ubo.viewport.z  = m_viewport_params.width;
-    m_ubo.viewport.w  = m_viewport_params.height;
-    m_ubo.extent.x    = m_rhi->getSwapchainInfo().scissor->extent.width;
-    m_ubo.extent.y    = m_rhi->getSwapchainInfo().scissor->extent.height;
-
-    memcpy(m_particle_compute_buffer_mapped, &m_ubo, sizeof(m_ubo));
-
-    {
-        RHIDeviceMemory* d_mem;
-        m_rhi->createBuffer(sizeof(m_particlebillboard_perframe_storage_buffer_object),
-                            RHI_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                            RHI_MEMORY_PROPERTY_HOST_VISIBLE_BIT | RHI_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                            m_particle_billboard_uniform_buffer,
-                            d_mem);
-
-        if (RHI_SUCCESS !=
-            m_rhi->mapMemory(d_mem, 0, RHI_WHOLE_SIZE, 0, &m_particle_billboard_uniform_buffer_mapped))
-            throw std::runtime_error("map billboard uniform buffer");
-    }
-}
-
-void ParticlePass::updateEmitterTransform() {
-    for (ParticleEmitterTransformDesc &transform_desc : m_emitter_transform_indices) {
-        int index                                                 = transform_desc.m_id;
-        m_emitter_buffer_batches[index].m_emitter_desc.m_position = transform_desc.m_position;
-        m_emitter_buffer_batches[index].m_emitter_desc.m_rotation = transform_desc.m_rotation;
-
-        memcpy(m_emitter_buffer_batches[index].m_emitter_desc_mapped,
-               &m_emitter_buffer_batches[index].m_emitter_desc,
-               sizeof(ParticleEmitterDesc));
-    }
-}
-
-void ParticlePass::updateUniformBuffer() {
-    std::random_device r;
-    std::seed_seq      seed {r()};
-    m_random_engine.seed(seed);
-    float rnd0 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
-    float rnd1 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
-    float rnd2 = m_random_engine.uniformDistribution<float>(0, 1000) * 0.001f;
-    m_ubo.pack = Vector4 {rnd0, rnd1, rnd2, static_cast<float>(m_rhi->getCurrentFrameIndex())};
-
-    m_ubo.viewport.x = m_rhi->getSwapchainInfo().viewport->x;
-    m_ubo.viewport.y = m_rhi->getSwapchainInfo().viewport->y;
-    m_ubo.viewport.z = m_rhi->getSwapchainInfo().viewport->width;
-    m_ubo.viewport.w = m_rhi->getSwapchainInfo().viewport->height;
-    m_ubo.extent.x   = m_rhi->getSwapchainInfo().scissor->extent.width;
-    m_ubo.extent.y   = m_rhi->getSwapchainInfo().scissor->extent.height;
-
-    m_ubo.extent.z = g_runtime_global_context.m_render_system->getRenderCamera()->m_znear;
-    m_ubo.extent.w = g_runtime_global_context.m_render_system->getRenderCamera()->m_zfar;
-    memcpy(m_particle_compute_buffer_mapped, &m_ubo, sizeof(m_ubo));
-}
-
-void ParticlePass::preparePassData(std::shared_ptr<RenderResourceBase> render_resource) {
-    const RenderResource* vulkan_resource = static_cast<const RenderResource*>(render_resource.get());
-    if (vulkan_resource) {
-        m_particle_collision_perframe_storage_buffer_object =
-            vulkan_resource->m_particle_collision_perframe_storage_buffer_object;
-        memcpy(m_scene_uniform_buffer_mapped,
-               &m_particle_collision_perframe_storage_buffer_object,
-               sizeof(ParticleCollisionPerframeStorageBufferObject));
-
-        m_particlebillboard_perframe_storage_buffer_object =
-            vulkan_resource->m_particlebillboard_perframe_storage_buffer_object;
-        memcpy(m_particle_billboard_uniform_buffer_mapped,
-               &m_particlebillboard_perframe_storage_buffer_object,
-               sizeof(m_particlebillboard_perframe_storage_buffer_object));
-
-        m_viewport_params = *m_rhi->getSwapchainInfo().viewport;
-        updateUniformBuffer();
-        updateEmitterTransform();
-    }
-}
-
-void ParticlePass::setDepthAndNormalImage(RHIImage* depth_image, RHIImage* normal_image) {
-    m_src_depth_image  = depth_image;
-    m_src_normal_image = normal_image;
-}
-
-void ParticlePass::setRenderCommandBufferHandle(RHICommandBuffer* command_buffer) {
-    m_render_command_buffer = command_buffer;
-}
-
-void ParticlePass::setRenderPassHandle(RHIRenderPass* render_pass) { m_render_pass = render_pass; }
-
-void ParticlePass::setTickIndices(const std::vector<ParticleEmitterID> &tick_indices) {
-    m_emitter_tick_indices = tick_indices;
-}
-
-void ParticlePass::setTransformIndices(const std::vector<ParticleEmitterTransformDesc> &transform_indices) {
-    m_emitter_transform_indices = transform_indices;
 }
 } // namespace Piccolo

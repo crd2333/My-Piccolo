@@ -375,6 +375,7 @@ void EditorUI::showEditorMenu(bool* p_open) {
     ImGui::DockSpace(main_docking_id);
 
     if (ImGui::BeginMenuBar()) {
+        // Main menu
         if (ImGui::BeginMenu("Menu")) {
             if (ImGui::MenuItem("Reload Current Level")) {
                 g_runtime_global_context.m_world_manager->reloadCurrentLevel();
@@ -409,6 +410,7 @@ void EditorUI::showEditorMenu(bool* p_open) {
             }
             ImGui::EndMenu();
         }
+        // Window menu
         if (ImGui::BeginMenu("Window")) {
             ImGui::MenuItem("World Objects", nullptr, &m_asset_window_open);
             ImGui::MenuItem("Game", nullptr, &m_game_engine_window_open);
@@ -416,6 +418,18 @@ void EditorUI::showEditorMenu(bool* p_open) {
             ImGui::MenuItem("Detail", nullptr, &m_detail_window_open);
             ImGui::EndMenu();
         }
+        // Render pipeline button
+        ImGui::SameLine();
+        ImGui::Separator();
+        ImGui::SameLine();
+        bool is_deferred_rendering = g_runtime_global_context.m_render_system->isDeferredRendering();
+        const char* button_text = is_deferred_rendering ? "Deferred" : "Forward";
+        if (ImGui::Button(button_text)) {
+            g_runtime_global_context.m_render_system->setRenderPipelineType(
+                is_deferred_rendering ? RENDER_PIPELINE_TYPE::FORWARD_PIPELINE : RENDER_PIPELINE_TYPE::DEFERRED_PIPELINE);
+        }
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Click to toggle between Forward and Deferred rendering");
         ImGui::EndMenuBar();
     }
 

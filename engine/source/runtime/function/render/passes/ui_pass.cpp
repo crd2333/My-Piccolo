@@ -82,14 +82,9 @@ void UIPass::draw() {
 
         m_window_ui->preRender();
 
-        float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-        m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "ImGUI", color);
-
         ImGui::Render();
 
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), std::static_pointer_cast<VulkanRHI>(m_rhi)->m_vk_current_command_buffer);
-
-        m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
     }
 }
 } // namespace Piccolo

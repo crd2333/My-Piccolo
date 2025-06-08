@@ -235,15 +235,10 @@ void CombineUIPass::updateAfterFramebufferRecreate(RHIImageView* scene_input_att
 }
 
 void CombineUIPass::draw() {
-    float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Combine UI", color);
-
-    RHIViewport viewport = {0.0,
-                            0.0,
+    RHIViewport viewport = {0.0, 0.0,
                             static_cast<float>(m_rhi->getSwapchainInfo().extent.width),
                             static_cast<float>(m_rhi->getSwapchainInfo().extent.height),
-                            0.0,
-                            1.0
+                            0.0, 1.0
                            };
     RHIRect2D   scissor  = {0, 0, m_rhi->getSwapchainInfo().extent.width, m_rhi->getSwapchainInfo().extent.height};
 
@@ -260,7 +255,5 @@ void CombineUIPass::draw() {
                                     NULL);
 
     m_rhi->cmdDraw(m_rhi->getCurrentCommandBuffer(), 3, 1, 0, 0);
-
-    m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
 }
 } // namespace Piccolo

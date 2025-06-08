@@ -13,7 +13,6 @@ class CombineUIPass : public RenderPass {
 public:
     void initialize(const RenderPassInitInfo* init_info) override final;
     void draw() override final;
-
     void updateAfterFramebufferRecreate(RHIImageView* scene_input_attachment, RHIImageView* ui_input_attachment);
 
 private:

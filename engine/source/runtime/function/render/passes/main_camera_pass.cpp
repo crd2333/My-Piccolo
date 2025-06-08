@@ -1,12 +1,10 @@
 #include "runtime/function/render/passes/main_camera_pass.h"
 #include "runtime/function/render/render_helper.h"
 #include "runtime/function/render/render_mesh.h"
-#include "runtime/function/render/render_resource.h"
 
 #include "runtime/function/render/interface/vulkan/vulkan_rhi.h"
 #include "runtime/function/render/interface/vulkan/vulkan_util.h"
 
-#include <map>
 #include <stdexcept>
 
 #include <axis_frag.h>
@@ -18,6 +16,9 @@
 #include <mesh_vert.h>
 #include <skybox_frag.h>
 #include <skybox_vert.h>
+
+// TODO: auto filp
+// TODO: render pipeline as asset (no hard code)
 
 namespace Piccolo {
 void MainCameraPass::initialize(const RenderPassInitInfo* init_info) {
@@ -421,10 +422,13 @@ void MainCameraPass::setupRenderPass() {
     combine_ui_pass.pPreserveAttachments    = NULL;
 
     RHISubpassDependency dependencies[9] = {};
-    auto srcStageMaskCommon = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    auto dstStageMaskCommon = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    auto srcAccessMaskCommon = RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    auto dstAccessMaskCommon = RHI_ACCESS_SHADER_READ_BIT | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+    auto setCommonMaskAndFlags = [](RHISubpassDependency &dependency) {
+        dependency.srcStageMask = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency.dstStageMask = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency.srcAccessMask = RHI_ACCESS_SHADER_WRITE_BIT | RHI_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        dependency.dstAccessMask = RHI_ACCESS_SHADER_READ_BIT | RHI_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+        dependency.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
+    };
 
     RHISubpassDependency &deferred_lighting_pass_depend_on_shadow_map_pass = dependencies[0];
     deferred_lighting_pass_depend_on_shadow_map_pass.srcSubpass      = RHI_SUBPASS_EXTERNAL;
@@ -438,74 +442,42 @@ void MainCameraPass::setupRenderPass() {
     RHISubpassDependency &deferred_lighting_pass_depend_on_base_pass = dependencies[1];
     deferred_lighting_pass_depend_on_base_pass.srcSubpass      = _main_camera_subpass_basepass;
     deferred_lighting_pass_depend_on_base_pass.dstSubpass      = _main_camera_subpass_deferred_lighting;
-    deferred_lighting_pass_depend_on_base_pass.srcStageMask    = srcStageMaskCommon;
-    deferred_lighting_pass_depend_on_base_pass.dstStageMask    = dstStageMaskCommon;
-    deferred_lighting_pass_depend_on_base_pass.srcAccessMask   = srcAccessMaskCommon;
-    deferred_lighting_pass_depend_on_base_pass.dstAccessMask   = dstAccessMaskCommon;
-    deferred_lighting_pass_depend_on_base_pass.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
+    setCommonMaskAndFlags(deferred_lighting_pass_depend_on_base_pass);
 
     RHISubpassDependency &forward_lighting_pass_depend_on_deferred_lighting_pass = dependencies[2];
     forward_lighting_pass_depend_on_deferred_lighting_pass.srcSubpass      = _main_camera_subpass_deferred_lighting;
     forward_lighting_pass_depend_on_deferred_lighting_pass.dstSubpass      = _main_camera_subpass_forward_lighting;
-    forward_lighting_pass_depend_on_deferred_lighting_pass.srcStageMask    = srcStageMaskCommon;
-    forward_lighting_pass_depend_on_deferred_lighting_pass.dstStageMask    = dstStageMaskCommon;
-    forward_lighting_pass_depend_on_deferred_lighting_pass.srcAccessMask   = srcAccessMaskCommon;
-    forward_lighting_pass_depend_on_deferred_lighting_pass.dstAccessMask   = dstAccessMaskCommon;
-    forward_lighting_pass_depend_on_deferred_lighting_pass.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
+    setCommonMaskAndFlags(forward_lighting_pass_depend_on_deferred_lighting_pass);
 
     RHISubpassDependency &tone_mapping_pass_depend_on_lighting_pass = dependencies[3];
     tone_mapping_pass_depend_on_lighting_pass.srcSubpass      = _main_camera_subpass_forward_lighting;
     tone_mapping_pass_depend_on_lighting_pass.dstSubpass      = _main_camera_subpass_tone_mapping;
-    tone_mapping_pass_depend_on_lighting_pass.srcStageMask    = srcStageMaskCommon;
-    tone_mapping_pass_depend_on_lighting_pass.dstStageMask    = dstStageMaskCommon;
-    tone_mapping_pass_depend_on_lighting_pass.srcAccessMask   = srcAccessMaskCommon;
-    tone_mapping_pass_depend_on_lighting_pass.dstAccessMask   = dstAccessMaskCommon;
-    tone_mapping_pass_depend_on_lighting_pass.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
+    setCommonMaskAndFlags(tone_mapping_pass_depend_on_lighting_pass);
 
     RHISubpassDependency &color_grading_pass_depend_on_tone_mapping_pass = dependencies[4];
     color_grading_pass_depend_on_tone_mapping_pass.srcSubpass      = _main_camera_subpass_tone_mapping;
     color_grading_pass_depend_on_tone_mapping_pass.dstSubpass      = _main_camera_subpass_color_grading;
-    color_grading_pass_depend_on_tone_mapping_pass.srcStageMask    = srcStageMaskCommon;
-    color_grading_pass_depend_on_tone_mapping_pass.dstStageMask    = dstStageMaskCommon;
-    color_grading_pass_depend_on_tone_mapping_pass.srcAccessMask   = srcAccessMaskCommon;
-    color_grading_pass_depend_on_tone_mapping_pass.dstAccessMask   = dstAccessMaskCommon;
-    color_grading_pass_depend_on_tone_mapping_pass.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
+    setCommonMaskAndFlags(color_grading_pass_depend_on_tone_mapping_pass);
 
     RHISubpassDependency &vignette_pass_depend_on_color_grading_pass = dependencies[5];
     vignette_pass_depend_on_color_grading_pass.srcSubpass      = _main_camera_subpass_color_grading;
     vignette_pass_depend_on_color_grading_pass.dstSubpass      = _main_camera_subpass_vignette;
-    vignette_pass_depend_on_color_grading_pass.srcStageMask    = srcStageMaskCommon;
-    vignette_pass_depend_on_color_grading_pass.dstStageMask    = dstStageMaskCommon;
-    vignette_pass_depend_on_color_grading_pass.srcAccessMask   = srcAccessMaskCommon;
-    vignette_pass_depend_on_color_grading_pass.dstAccessMask   = dstAccessMaskCommon;
-    vignette_pass_depend_on_color_grading_pass.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
+    setCommonMaskAndFlags(vignette_pass_depend_on_color_grading_pass);
 
     RHISubpassDependency &fxaa_pass_depend_on_vignette_pass = dependencies[6];
     fxaa_pass_depend_on_vignette_pass.srcSubpass      = _main_camera_subpass_vignette;
     fxaa_pass_depend_on_vignette_pass.dstSubpass      = _main_camera_subpass_fxaa;
-    fxaa_pass_depend_on_vignette_pass.srcStageMask    = srcStageMaskCommon;
-    fxaa_pass_depend_on_vignette_pass.dstStageMask    = dstStageMaskCommon;
-    fxaa_pass_depend_on_vignette_pass.srcAccessMask   = srcAccessMaskCommon;
-    fxaa_pass_depend_on_vignette_pass.dstAccessMask   = dstAccessMaskCommon;
-    fxaa_pass_depend_on_vignette_pass.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
+    setCommonMaskAndFlags(fxaa_pass_depend_on_vignette_pass);
 
     RHISubpassDependency &ui_pass_depend_on_fxaa_pass = dependencies[7];
     ui_pass_depend_on_fxaa_pass.srcSubpass      = _main_camera_subpass_fxaa;
     ui_pass_depend_on_fxaa_pass.dstSubpass      = _main_camera_subpass_ui;
-    ui_pass_depend_on_fxaa_pass.srcStageMask    = srcStageMaskCommon;
-    ui_pass_depend_on_fxaa_pass.dstStageMask    = dstStageMaskCommon;
-    ui_pass_depend_on_fxaa_pass.srcAccessMask   = srcAccessMaskCommon;
-    ui_pass_depend_on_fxaa_pass.dstAccessMask   = dstAccessMaskCommon;
-    ui_pass_depend_on_fxaa_pass.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
+    setCommonMaskAndFlags(ui_pass_depend_on_fxaa_pass);
 
     RHISubpassDependency &combine_ui_pass_depend_on_ui_pass = dependencies[8];
     combine_ui_pass_depend_on_ui_pass.srcSubpass      = _main_camera_subpass_ui;
     combine_ui_pass_depend_on_ui_pass.dstSubpass      = _main_camera_subpass_combine_ui;
-    combine_ui_pass_depend_on_ui_pass.srcStageMask    = srcStageMaskCommon;
-    combine_ui_pass_depend_on_ui_pass.dstStageMask    = dstStageMaskCommon;
-    combine_ui_pass_depend_on_ui_pass.srcAccessMask   = srcAccessMaskCommon;
-    combine_ui_pass_depend_on_ui_pass.dstAccessMask   = dstAccessMaskCommon;
-    combine_ui_pass_depend_on_ui_pass.dependencyFlags = RHI_DEPENDENCY_BY_REGION_BIT;
+    setCommonMaskAndFlags(combine_ui_pass_depend_on_ui_pass);
 
     RHIRenderPassCreateInfo renderpass_create_info {};
     renderpass_create_info.sType           = RHI_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -1876,48 +1848,52 @@ void MainCameraPass::draw(ColorGradingPass &color_grading_pass,
         m_rhi->cmdBeginRenderPassPFN(m_rhi->getCurrentCommandBuffer(), &renderpass_begin_info, RHI_SUBPASS_CONTENTS_INLINE);
     }
 
+    // ----- base pass -----
     float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "BasePass", color);
-
-    drawMeshGbuffer(); // 首先绘制 GBuffer
-
+    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "BasePass of G-Buffer", color);
+    drawMesh(_render_pipeline_type_mesh_gbuffer); // 延迟渲染首先绘制 GBuffer
     m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
-
     m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
+    // ----- deferred lighting pass -----
     m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Deferred Lighting", color);
-
     drawDeferredLighting();
-
     m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
-
     m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
-    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Forward Lighting", color);
-
+    // ----- forward lighting pass -----
+    m_rhi->pushEvent(particle_pass.getRenderCommandBufferHandle(), "Forward Lighting of ParticleBillboard", color);
     particle_pass.draw();
-
-    m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
-
+    m_rhi->popEvent(particle_pass.getRenderCommandBufferHandle());
     m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
+    // ----- tone mapping pass -----
+    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Tone Map", color);
     tone_mapping_pass.draw();
-
+    m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
     m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
+    // ----- color grading pass -----
+    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Color Grading", color);
     color_grading_pass.draw();
-
+    m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
     m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
+    // ----- vignette pass -----
+    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Vignette", color);
     vignette_pass.draw();
-
+    m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
     m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
-    if (m_enable_fxaa)
+    // ----- FXAA pass (optionally jumped) -----
+    if (m_enable_fxaa) {
+        m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "FXAA", color);
         fxaa_pass.draw();
-
+        m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
+    }
     m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
+    // ----- UI pass -----
     RHIClearAttachment clear_attachments[1];
     clear_attachments[0].aspectMask                  = RHI_IMAGE_ASPECT_COLOR_BIT;
     clear_attachments[0].colorAttachment             = 0;
@@ -1937,14 +1913,18 @@ void MainCameraPass::draw(ColorGradingPass &color_grading_pass,
                                   clear_attachments,
                                   sizeof(clear_rects) / sizeof(clear_rects[0]),
                                   clear_rects);
-
+    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "UI of Axis", color);
     drawAxis();
-
+    m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
+    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "UI of ImGUI", color);
     ui_pass.draw();
+    m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
 
+    // ----- combine UI pass -----
     m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
-
+    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Combine UI", color);
     combine_ui_pass.draw();
+    m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
 
     m_rhi->cmdEndRenderPassPFN(m_rhi->getCurrentCommandBuffer());
 }
@@ -1980,38 +1960,54 @@ void MainCameraPass::drawForward(ColorGradingPass &color_grading_pass,
         m_rhi->cmdBeginRenderPassPFN(m_rhi->getCurrentCommandBuffer(), &renderpass_begin_info, RHI_SUBPASS_CONTENTS_INLINE);
     }
 
-    m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
-
-    m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
-
+    // ----- base pass (jumped) -----
     float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Forward Lighting", color);
+    m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
-    drawMeshLighting();
-    drawSkybox();
-    particle_pass.draw();
+    // ----- deferred lighting pass (jumped) -----
+    m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
+    // ----- forward lighting pass -----
+    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Forward Lighting of Model", color);
+    drawMesh(_render_pipeline_type_mesh_lighting);
     m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
 
+    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Forward Lighting of Skybox", color);
+    drawSkybox();
+    m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
+
+    m_rhi->pushEvent(particle_pass.getRenderCommandBufferHandle(), "Forward Lighting of ParticleBillboard", color);
+    particle_pass.draw();
+    m_rhi->popEvent(particle_pass.getRenderCommandBufferHandle());
     m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
+    // ----- tone mapping pass -----
+    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Tone Map", color);
     tone_mapping_pass.draw();
-
+    m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
     m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
+    // ----- color grading pass -----
+    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Color Grading", color);
     color_grading_pass.draw();
-
+    m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
     m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
-    color_grading_pass.draw();
-
+    // ----- vignette pass -----
+    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Vignette", color);
+    vignette_pass.draw();
+    m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
     m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
-    if (m_enable_fxaa)
+    // ----- FXAA pass (optionally jumped) -----
+    if (m_enable_fxaa) {
+        m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "FXAA", color);
         fxaa_pass.draw();
-
+        m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
+    }
     m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
 
+    // ----- UI pass -----
     RHIClearAttachment clear_attachments[1];
     clear_attachments[0].aspectMask                  = RHI_IMAGE_ASPECT_COLOR_BIT;
     clear_attachments[0].colorAttachment             = 0;
@@ -2031,48 +2027,46 @@ void MainCameraPass::drawForward(ColorGradingPass &color_grading_pass,
                                   clear_attachments,
                                   sizeof(clear_rects) / sizeof(clear_rects[0]),
                                   clear_rects);
-
+    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "UI of Axis", color);
     drawAxis();
-
+    m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
+    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "UI of ImGUI", color);
     ui_pass.draw();
+    m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
 
     m_rhi->cmdNextSubpassPFN(m_rhi->getCurrentCommandBuffer(), RHI_SUBPASS_CONTENTS_INLINE);
-
+    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Combine UI", color);
     combine_ui_pass.draw();
+    m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
 
     m_rhi->cmdEndRenderPassPFN(m_rhi->getCurrentCommandBuffer());
 }
 
-void MainCameraPass::drawMeshGbuffer() {
-    struct MeshNode {
-        const Matrix4x4* model_matrix {nullptr};
-        const Matrix4x4* joint_matrices {nullptr};
-        uint32_t         joint_count {0};
-    };
+// 根据 material 和 mesh 进行重新分组
+std::map<VulkanPBRMaterial*, std::map<VulkanMesh*, std::vector<MeshNode>>> MainCameraPass::reorganizeMeshNodes(std::vector<RenderMeshNode>* visible_mesh_nodes) {
+    std::map<VulkanPBRMaterial*, std::map<VulkanMesh*, std::vector<MeshNode>>> drawcall_batch;
 
-    std::map<VulkanPBRMaterial*, std::map<VulkanMesh*, std::vector<MeshNode>>> main_camera_mesh_drawcall_batch;
-
-    // reorganize mesh
-    for (RenderMeshNode &node : *(m_visible_nodes.p_main_camera_visible_mesh_nodes)) {
-        auto &mesh_instanced = main_camera_mesh_drawcall_batch[node.ref_material];
-        auto &mesh_nodes     = mesh_instanced[node.ref_mesh];
-
-        MeshNode temp;
-        temp.model_matrix = node.model_matrix;
+    for (const RenderMeshNode& node : *visible_mesh_nodes) {
+        MeshNode mesh_node;
+        mesh_node.model_matrix = node.model_matrix;
         if (node.enable_vertex_blending) {
-            temp.joint_matrices = node.joint_matrices;
-            temp.joint_count    = node.joint_count;
+            mesh_node.joint_matrices = node.joint_matrices;
+            mesh_node.joint_count = node.joint_count;
         }
-
-        mesh_nodes.push_back(temp);
+        auto& mesh_map = drawcall_batch[node.ref_material]; // [] 操作符，找不着就创建新的，找到了就用已有的
+        mesh_map[node.ref_mesh].push_back(std::move(mesh_node));
     }
 
-    float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Mesh GBuffer", color);
+    return drawcall_batch;
+}
+
+void MainCameraPass::drawMesh(RenderPipeLineType render_pipeline_type) {
+    // reorganize mesh
+    auto drawcall_batch = reorganizeMeshNodes(m_visible_nodes.p_main_camera_visible_mesh_nodes);
 
     m_rhi->cmdBindPipelinePFN(m_rhi->getCurrentCommandBuffer(),
                               RHI_PIPELINE_BIND_POINT_GRAPHICS,
-                              m_render_pipelines[_render_pipeline_type_mesh_gbuffer].pipeline);
+                              m_render_pipelines[render_pipeline_type].pipeline);
     m_rhi->cmdSetViewportPFN(m_rhi->getCurrentCommandBuffer(), 0, 1, m_rhi->getSwapchainInfo().viewport);
     m_rhi->cmdSetScissorPFN(m_rhi->getCurrentCommandBuffer(), 0, 1, m_rhi->getSwapchainInfo().scissor);
 
@@ -2096,14 +2090,14 @@ void MainCameraPass::drawMeshGbuffer() {
              m_global_render_resource->_storage_buffer._global_upload_ringbuffer_memory_pointer) +
          perframe_dynamic_offset)) = m_mesh_perframe_storage_buffer_object;
 
-    for (auto &pair1 : main_camera_mesh_drawcall_batch) {
-        VulkanPBRMaterial &material       = (*pair1.first);
-        auto              &mesh_instanced = pair1.second;
+    for (auto &pair1 : drawcall_batch) {
+        VulkanPBRMaterial &material = (*pair1.first);
+        auto &mesh_instanced = pair1.second;
 
         // bind per material
         m_rhi->cmdBindDescriptorSetsPFN(m_rhi->getCurrentCommandBuffer(),
                                         RHI_PIPELINE_BIND_POINT_GRAPHICS,
-                                        m_render_pipelines[_render_pipeline_type_mesh_gbuffer].layout,
+                                        m_render_pipelines[render_pipeline_type].layout,
                                         2,
                                         1,
                                         &material.material_descriptor_set,
@@ -2121,7 +2115,7 @@ void MainCameraPass::drawMeshGbuffer() {
                 // bind per mesh
                 m_rhi->cmdBindDescriptorSetsPFN(m_rhi->getCurrentCommandBuffer(),
                                                 RHI_PIPELINE_BIND_POINT_GRAPHICS,
-                                                m_render_pipelines[_render_pipeline_type_mesh_gbuffer].layout,
+                                                m_render_pipelines[render_pipeline_type].layout,
                                                 1,
                                                 1,
                                                 &mesh.mesh_vertex_blending_descriptor_set,
@@ -2235,7 +2229,7 @@ void MainCameraPass::drawMeshGbuffer() {
                                                   };
                     m_rhi->cmdBindDescriptorSetsPFN(m_rhi->getCurrentCommandBuffer(),
                                                     RHI_PIPELINE_BIND_POINT_GRAPHICS,
-                                                    m_render_pipelines[_render_pipeline_type_mesh_gbuffer].layout,
+                                                    m_render_pipelines[render_pipeline_type].layout,
                                                     0,
                                                     1,
                                                     &m_descriptor_infos[_mesh_global].descriptor_set,
@@ -2252,8 +2246,6 @@ void MainCameraPass::drawMeshGbuffer() {
             }
         }
     }
-
-    m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
 }
 
 void MainCameraPass::drawDeferredLighting() {
@@ -2300,218 +2292,6 @@ void MainCameraPass::drawDeferredLighting() {
     m_rhi->cmdDraw(m_rhi->getCurrentCommandBuffer(), 3, 1, 0, 0);
 }
 
-void MainCameraPass::drawMeshLighting() {
-    struct MeshNode {
-        const Matrix4x4* model_matrix {nullptr};
-        const Matrix4x4* joint_matrices {nullptr};
-        uint32_t         joint_count {0};
-    };
-
-    std::map<VulkanPBRMaterial*, std::map<VulkanMesh*, std::vector<MeshNode>>> main_camera_mesh_drawcall_batch;
-
-    // reorganize mesh
-    for (RenderMeshNode &node : *(m_visible_nodes.p_main_camera_visible_mesh_nodes)) {
-        auto &mesh_instanced = main_camera_mesh_drawcall_batch[node.ref_material];
-        auto &mesh_nodes     = mesh_instanced[node.ref_mesh];
-
-        MeshNode temp;
-        temp.model_matrix = node.model_matrix;
-        if (node.enable_vertex_blending) {
-            temp.joint_matrices = node.joint_matrices;
-            temp.joint_count    = node.joint_count;
-        }
-
-        mesh_nodes.push_back(temp);
-    }
-
-    float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Model", color);
-
-    m_rhi->cmdBindPipelinePFN(m_rhi->getCurrentCommandBuffer(),
-                              RHI_PIPELINE_BIND_POINT_GRAPHICS,
-                              m_render_pipelines[_render_pipeline_type_mesh_lighting].pipeline);
-    m_rhi->cmdSetViewportPFN(m_rhi->getCurrentCommandBuffer(), 0, 1, m_rhi->getSwapchainInfo().viewport);
-    m_rhi->cmdSetScissorPFN(m_rhi->getCurrentCommandBuffer(), 0, 1, m_rhi->getSwapchainInfo().scissor);
-
-    // perframe storage buffer
-    uint32_t perframe_dynamic_offset =
-        roundUp(m_global_render_resource->_storage_buffer
-                ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()],
-                m_global_render_resource->_storage_buffer._min_storage_buffer_offset_alignment);
-
-    m_global_render_resource->_storage_buffer._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] =
-            perframe_dynamic_offset + sizeof(MeshPerframeStorageBufferObject);
-    assert(m_global_render_resource->_storage_buffer
-           ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] <=
-           (m_global_render_resource->_storage_buffer
-            ._global_upload_ringbuffers_begin[m_rhi->getCurrentFrameIndex()] +
-            m_global_render_resource->_storage_buffer
-            ._global_upload_ringbuffers_size[m_rhi->getCurrentFrameIndex()]));
-
-    (*reinterpret_cast<MeshPerframeStorageBufferObject*>(
-         reinterpret_cast<uintptr_t>(
-             m_global_render_resource->_storage_buffer._global_upload_ringbuffer_memory_pointer) +
-         perframe_dynamic_offset)) = m_mesh_perframe_storage_buffer_object;
-
-    for (auto &pair1 : main_camera_mesh_drawcall_batch) {
-        VulkanPBRMaterial &material       = (*pair1.first);
-        auto              &mesh_instanced = pair1.second;
-
-        // bind per material
-        m_rhi->cmdBindDescriptorSetsPFN(m_rhi->getCurrentCommandBuffer(),
-                                        RHI_PIPELINE_BIND_POINT_GRAPHICS,
-                                        m_render_pipelines[_render_pipeline_type_mesh_lighting].layout,
-                                        2,
-                                        1,
-                                        &material.material_descriptor_set,
-                                        0,
-                                        NULL);
-
-        // TODO: render from near to far
-
-        for (auto &pair2 : mesh_instanced) {
-            VulkanMesh &mesh       = (*pair2.first);
-            auto       &mesh_nodes = pair2.second;
-
-            uint32_t total_instance_count = static_cast<uint32_t>(mesh_nodes.size());
-            if (total_instance_count > 0) {
-                // bind per mesh
-                m_rhi->cmdBindDescriptorSetsPFN(m_rhi->getCurrentCommandBuffer(),
-                                                RHI_PIPELINE_BIND_POINT_GRAPHICS,
-                                                m_render_pipelines[_render_pipeline_type_mesh_lighting].layout,
-                                                1,
-                                                1,
-                                                &mesh.mesh_vertex_blending_descriptor_set,
-                                                0,
-                                                NULL);
-
-                RHIBuffer*     vertex_buffers[3] = {mesh.mesh_vertex_position_buffer,
-                                                    mesh.mesh_vertex_varying_enable_blending_buffer,
-                                                    mesh.mesh_vertex_varying_buffer
-                                                   };
-                RHIDeviceSize offsets[]        = {0, 0, 0};
-                m_rhi->cmdBindVertexBuffersPFN(m_rhi->getCurrentCommandBuffer(),
-                                               0,
-                                               (sizeof(vertex_buffers) / sizeof(vertex_buffers[0])),
-                                               vertex_buffers,
-                                               offsets);
-                m_rhi->cmdBindIndexBufferPFN(m_rhi->getCurrentCommandBuffer(), mesh.mesh_index_buffer, 0, RHI_INDEX_TYPE_UINT16);
-
-                uint32_t drawcall_max_instance_count =
-                    (sizeof(MeshPerdrawcallStorageBufferObject::mesh_instances) /
-                     sizeof(MeshPerdrawcallStorageBufferObject::mesh_instances[0]));
-                uint32_t drawcall_count =
-                    roundUp(total_instance_count, drawcall_max_instance_count) / drawcall_max_instance_count;
-
-                for (uint32_t drawcall_index = 0; drawcall_index < drawcall_count; ++drawcall_index) {
-                    uint32_t current_instance_count =
-                        ((total_instance_count - drawcall_max_instance_count * drawcall_index) <
-                         drawcall_max_instance_count) ?
-                        (total_instance_count - drawcall_max_instance_count * drawcall_index) :
-                        drawcall_max_instance_count;
-
-                    // per drawcall storage buffer
-                    uint32_t perdrawcall_dynamic_offset =
-                        roundUp(m_global_render_resource->_storage_buffer
-                                ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()],
-                                m_global_render_resource->_storage_buffer._min_storage_buffer_offset_alignment);
-                    m_global_render_resource->_storage_buffer
-                    ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] =
-                        perdrawcall_dynamic_offset + sizeof(MeshPerdrawcallStorageBufferObject);
-                    assert(m_global_render_resource->_storage_buffer
-                           ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] <=
-                           (m_global_render_resource->_storage_buffer
-                            ._global_upload_ringbuffers_begin[m_rhi->getCurrentFrameIndex()] +
-                            m_global_render_resource->_storage_buffer
-                            ._global_upload_ringbuffers_size[m_rhi->getCurrentFrameIndex()]));
-
-                    MeshPerdrawcallStorageBufferObject &perdrawcall_storage_buffer_object =
-                        (*reinterpret_cast<MeshPerdrawcallStorageBufferObject*>(
-                             reinterpret_cast<uintptr_t>(m_global_render_resource->_storage_buffer
-                                                         ._global_upload_ringbuffer_memory_pointer) +
-                             perdrawcall_dynamic_offset));
-                    for (uint32_t i = 0; i < current_instance_count; ++i) {
-                        perdrawcall_storage_buffer_object.mesh_instances[i].model_matrix =
-                            *mesh_nodes[drawcall_max_instance_count * drawcall_index + i].model_matrix;
-                        perdrawcall_storage_buffer_object.mesh_instances[i].enable_vertex_blending =
-                            mesh_nodes[drawcall_max_instance_count * drawcall_index + i].joint_matrices ? 1.0 :
-                            -1.0;
-                    }
-
-                    // per drawcall vertex blending storage buffer
-                    uint32_t per_drawcall_vertex_blending_dynamic_offset;
-                    bool     least_one_enable_vertex_blending = true;
-                    for (uint32_t i = 0; i < current_instance_count; ++i) {
-                        if (!mesh_nodes[drawcall_max_instance_count * drawcall_index + i].joint_matrices) {
-                            least_one_enable_vertex_blending = false;
-                            break;
-                        }
-                    }
-                    if (least_one_enable_vertex_blending) {
-                        per_drawcall_vertex_blending_dynamic_offset =
-                            roundUp(m_global_render_resource->_storage_buffer
-                                    ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()],
-                                    m_global_render_resource->_storage_buffer._min_storage_buffer_offset_alignment);
-                        m_global_render_resource->_storage_buffer
-                        ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] =
-                            per_drawcall_vertex_blending_dynamic_offset +
-                            sizeof(MeshPerdrawcallVertexBlendingStorageBufferObject);
-                        assert(m_global_render_resource->_storage_buffer
-                               ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] <=
-                               (m_global_render_resource->_storage_buffer
-                                ._global_upload_ringbuffers_begin[m_rhi->getCurrentFrameIndex()] +
-                                m_global_render_resource->_storage_buffer
-                                ._global_upload_ringbuffers_size[m_rhi->getCurrentFrameIndex()]));
-
-                        MeshPerdrawcallVertexBlendingStorageBufferObject &
-                        per_drawcall_vertex_blending_storage_buffer_object =
-                            (*reinterpret_cast<MeshPerdrawcallVertexBlendingStorageBufferObject*>(
-                                 reinterpret_cast<uintptr_t>(m_global_render_resource->_storage_buffer
-                                                             ._global_upload_ringbuffer_memory_pointer) +
-                                 per_drawcall_vertex_blending_dynamic_offset));
-                        for (uint32_t i = 0; i < current_instance_count; ++i) {
-                            if (mesh_nodes[drawcall_max_instance_count * drawcall_index + i].joint_matrices) {
-                                for (uint32_t j = 0;
-                                     j < mesh_nodes[drawcall_max_instance_count * drawcall_index + i].joint_count;
-                                     ++j) {
-                                    per_drawcall_vertex_blending_storage_buffer_object
-                                    .joint_matrices[s_mesh_vertex_blending_max_joint_count * i + j] =
-                                        mesh_nodes[drawcall_max_instance_count * drawcall_index + i]
-                                        .joint_matrices[j];
-                                }
-                            }
-                        }
-                    } else
-                        per_drawcall_vertex_blending_dynamic_offset = 0;
-
-                    // bind perdrawcall
-                    uint32_t dynamic_offsets[3] = {perframe_dynamic_offset,
-                                                   perdrawcall_dynamic_offset,
-                                                   per_drawcall_vertex_blending_dynamic_offset
-                                                  };
-                    m_rhi->cmdBindDescriptorSetsPFN(m_rhi->getCurrentCommandBuffer(),
-                                                    RHI_PIPELINE_BIND_POINT_GRAPHICS,
-                                                    m_render_pipelines[_render_pipeline_type_mesh_lighting].layout,
-                                                    0,
-                                                    1,
-                                                    &m_descriptor_infos[_mesh_global].descriptor_set,
-                                                    3,
-                                                    dynamic_offsets);
-
-                    m_rhi->cmdDrawIndexedPFN(m_rhi->getCurrentCommandBuffer(),
-                                             mesh.mesh_index_count,
-                                             current_instance_count,
-                                             0,
-                                             0,
-                                             0);
-                }
-            }
-        }
-    }
-
-    m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
-}
-
 void MainCameraPass::drawSkybox() {
     uint32_t perframe_dynamic_offset =
         roundUp(m_global_render_resource->_storage_buffer
@@ -2532,9 +2312,6 @@ void MainCameraPass::drawSkybox() {
              m_global_render_resource->_storage_buffer._global_upload_ringbuffer_memory_pointer) +
          perframe_dynamic_offset)) = m_mesh_perframe_storage_buffer_object;
 
-    float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Skybox", color);
-
     m_rhi->cmdBindPipelinePFN(m_rhi->getCurrentCommandBuffer(),
                               RHI_PIPELINE_BIND_POINT_GRAPHICS,
                               m_render_pipelines[_render_pipeline_type_skybox].pipeline);
@@ -2547,8 +2324,6 @@ void MainCameraPass::drawSkybox() {
                                     1,
                                     &perframe_dynamic_offset);
     m_rhi->cmdDraw(m_rhi->getCurrentCommandBuffer(), 36, 1, 0, 0); // 2 triangles(6 vertex) each face, 6 faces
-
-    m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
 }
 
 void MainCameraPass::drawAxis() {
@@ -2573,9 +2348,6 @@ void MainCameraPass::drawAxis() {
          reinterpret_cast<uintptr_t>(
              m_global_render_resource->_storage_buffer._global_upload_ringbuffer_memory_pointer) +
          perframe_dynamic_offset)) = m_mesh_perframe_storage_buffer_object;
-
-    float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Axis", color);
 
     m_rhi->cmdBindPipelinePFN(m_rhi->getCurrentCommandBuffer(),
                               RHI_PIPELINE_BIND_POINT_GRAPHICS,
@@ -2618,8 +2390,6 @@ void MainCameraPass::drawAxis() {
                              0,
                              0,
                              0);
-
-    m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
 }
 
 RHICommandBuffer* MainCameraPass::getRenderCommandBuffer() { return m_rhi->getCurrentCommandBuffer(); }

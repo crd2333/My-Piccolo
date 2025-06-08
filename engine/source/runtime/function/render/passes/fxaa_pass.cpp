@@ -222,21 +222,16 @@ void FXAAPass::updateAfterFramebufferRecreate(RHIImageView* input_attachment) {
 }
 
 void FXAAPass::draw() {
-    float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "FXAA", color);
-
-    RHIViewport viewport = {0.0,
-                            0.0,
+    RHIViewport viewport = {0.0, 0.0,
                             static_cast<float>(m_rhi->getSwapchainInfo().extent.width),
                             static_cast<float>(m_rhi->getSwapchainInfo().extent.height),
-                            0.0,
-                            1.0
+                            0.0, 1.0
                            };
-    int32_t    x        = static_cast<int32_t>(m_rhi->getSwapchainInfo().viewport->x);
-    int32_t    y        = static_cast<int32_t>(m_rhi->getSwapchainInfo().viewport->y);
-    uint32_t   width    = static_cast<uint32_t>(m_rhi->getSwapchainInfo().viewport->width);
-    uint32_t   height   = static_cast<uint32_t>(m_rhi->getSwapchainInfo().viewport->height);
-    RHIRect2D   scissor  = {x, y, width, height};
+    int32_t         x = static_cast<int32_t>(m_rhi->getSwapchainInfo().viewport->x);
+    int32_t         y = static_cast<int32_t>(m_rhi->getSwapchainInfo().viewport->y);
+    uint32_t    width = static_cast<uint32_t>(m_rhi->getSwapchainInfo().viewport->width);
+    uint32_t   height = static_cast<uint32_t>(m_rhi->getSwapchainInfo().viewport->height);
+    RHIRect2D scissor = {x, y, width, height};
 
     m_rhi->cmdBindPipelinePFN(m_rhi->getCurrentCommandBuffer(), RHI_PIPELINE_BIND_POINT_GRAPHICS, m_render_pipelines[0].pipeline);
     m_rhi->cmdSetViewportPFN(m_rhi->getCurrentCommandBuffer(), 0, 1, &viewport);
@@ -251,8 +246,6 @@ void FXAAPass::draw() {
                                     NULL);
 
     m_rhi->cmdDraw(m_rhi->getCurrentCommandBuffer(), 3, 1, 0, 0);
-
-    m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
 }
 
 } // namespace Piccolo

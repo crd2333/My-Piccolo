@@ -1,6 +1,7 @@
 #pragma once
 
 #include "runtime/function/render/render_pass.h"
+#include "runtime/function/render/render_resource.h"
 
 #include "runtime/function/render/passes/color_grading_pass.h"
 #include "runtime/function/render/passes/vignette_pass.h"
@@ -10,6 +11,8 @@
 #include "runtime/function/render/passes/ui_pass.h"
 #include "runtime/function/render/passes/particle_pass.h"
 
+#include <map>
+
 // passes 文件夹下一些是 render pass，一些是 subpass
 // 像 MainCameraPass 就是一个很大的 render pass，包含了多个 subpass
 
@@ -18,6 +21,13 @@ class RenderResourceBase;
 
 struct MainCameraPassInitInfo : RenderPassInitInfo {
     bool enable_fxaa;
+};
+
+// RenderMeshNode 中的 ref 信息、node_id、enable_vertex_blending 信息在合批后不需要
+struct MeshNode {
+    const Matrix4x4* model_matrix {nullptr};
+    const Matrix4x4* joint_matrices {nullptr};
+    uint32_t         joint_count {0};
 };
 
 class MainCameraPass : public RenderPass {
@@ -81,11 +91,11 @@ public:
     RHIImageView* m_point_light_shadow_color_image_view;
     RHIImageView* m_directional_light_shadow_color_image_view;
 
-    bool                                         m_is_show_axis{ false };
-    bool                                         m_enable_fxaa{ false };
-    size_t                                       m_selected_axis{ 3 };
-    MeshPerframeStorageBufferObject              m_mesh_perframe_storage_buffer_object;
-    AxisStorageBufferObject                      m_axis_storage_buffer_object;
+    bool                            m_is_show_axis{ false };
+    bool                            m_enable_fxaa{ false };
+    size_t                          m_selected_axis{ 3 };
+    MeshPerframeStorageBufferObject m_mesh_perframe_storage_buffer_object;
+    AxisStorageBufferObject         m_axis_storage_buffer_object;
 
     void updateAfterFramebufferRecreate();
 
@@ -109,15 +119,15 @@ private:
     void setupParticleDescriptorSet();
     void setupGbufferLightingDescriptorSet();
 
-    void drawMeshGbuffer();
+    void drawMesh(RenderPipeLineType render_pipeline_type);
     void drawDeferredLighting();
-    void drawMeshLighting();
     void drawSkybox();
     void drawAxis();
 
-
-
 private:
+    // 根据 material 和 mesh 进行重新分组 (re-batch)
+    std::map<VulkanPBRMaterial*, std::map<VulkanMesh*, std::vector<MeshNode>>> reorganizeMeshNodes(std::vector<RenderMeshNode> *visible_mesh_nodes);
+
     std::vector<RHIFramebuffer*> m_swapchain_framebuffers;
     std::shared_ptr<ParticlePass> m_particle_pass;
 };

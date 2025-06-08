@@ -214,9 +214,6 @@ void VignettePass::updateAfterFramebufferRecreate(RHIImageView* input_attachment
 
 // 提交预先准备好的 command buffer，会在 MainCameraPass 的 draw() 函数中被调用
 void VignettePass::draw() {
-    float color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    m_rhi->pushEvent(m_rhi->getCurrentCommandBuffer(), "Vignette", color);
-
     m_rhi->cmdBindPipelinePFN(m_rhi->getCurrentCommandBuffer(), RHI_PIPELINE_BIND_POINT_GRAPHICS, m_render_pipelines[0].pipeline);
     m_rhi->cmdSetViewportPFN(m_rhi->getCurrentCommandBuffer(), 0, 1, m_rhi->getSwapchainInfo().viewport);
     m_rhi->cmdSetScissorPFN(m_rhi->getCurrentCommandBuffer(), 0, 1, m_rhi->getSwapchainInfo().scissor);
@@ -230,7 +227,5 @@ void VignettePass::draw() {
                                     NULL);
 
     m_rhi->cmdDraw(m_rhi->getCurrentCommandBuffer(), 3, 1, 0, 0);
-
-    m_rhi->popEvent(m_rhi->getCurrentCommandBuffer());
 }
 } // namespace Piccolo
