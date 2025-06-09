@@ -25,7 +25,7 @@ void PickPass::initialize(const RenderPassInitInfo* init_info) {
     setupRenderPass();
     setupFramebuffer();
     setupDescriptorSetLayout();
-    setupPipelines();
+    setupPipeline();
     setupDescriptorSet();
 }
 void PickPass::postInitialize() {}
@@ -174,7 +174,7 @@ void PickPass::setupDescriptorSetLayout() {
 
         throw std::runtime_error("create mesh inefficient pick global layout");
 }
-void PickPass::setupPipelines() {
+void PickPass::setupPipeline() {
     m_render_pipelines.resize(1);
 
     RHIDescriptorSetLayout* descriptorset_layouts[] = {m_descriptor_infos[0].layout, _per_mesh_layout};

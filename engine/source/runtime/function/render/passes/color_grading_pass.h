@@ -17,7 +17,7 @@ public:
 
 private:
     void setupDescriptorSetLayout();
-    void setupPipelines();
+    void setupPipeline();
     void setupDescriptorSet();
 };
 } // namespace Piccolo

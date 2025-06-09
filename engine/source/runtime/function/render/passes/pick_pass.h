@@ -27,7 +27,7 @@ private:
     void setupRenderPass();
     void setupFramebuffer();
     void setupDescriptorSetLayout();
-    void setupPipelines();
+    void setupPipeline();
     void setupDescriptorSet();
 
 private:

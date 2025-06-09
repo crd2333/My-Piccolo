@@ -23,7 +23,7 @@ void PointLightShadowPass::initialize(const RenderPassInitInfo* init_info) {
     setupDescriptorSetLayout();
 }
 void PointLightShadowPass::postInitialize() {
-    setupPipelines();
+    setupPipeline();
     setupDescriptorSet();
 }
 void PointLightShadowPass::preparePassData(std::shared_ptr<RenderResourceBase> render_resource) {
@@ -210,7 +210,7 @@ void PointLightShadowPass::setupDescriptorSetLayout() {
     if (RHI_SUCCESS != m_rhi->createDescriptorSetLayout(&mesh_point_light_shadow_global_layout_create_info, m_descriptor_infos[0].layout))
         throw std::runtime_error("create mesh point light shadow global layout");
 }
-void PointLightShadowPass::setupPipelines() {
+void PointLightShadowPass::setupPipeline() {
     if (!m_rhi->isPointLightShadowEnabled())
         return;
 

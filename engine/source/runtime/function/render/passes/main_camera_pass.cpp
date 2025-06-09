@@ -124,46 +124,40 @@ void MainCameraPass::setupAttachments() {
 }
 
 void MainCameraPass::setupRenderPass() {
-    RHIAttachmentDescription attachments[_main_camera_pass_attachment_count] = {};
-
+    // ----- setupRenderPassAttachments -----
+    std::vector<RHIAttachmentDescription> attachments(_main_camera_pass_attachment_count);
     RHIAttachmentDescription &gbuffer_normal_attachment_description = attachments[_main_camera_pass_gbuffer_a];
-    gbuffer_normal_attachment_description.format  = m_framebuffer.attachments[_main_camera_pass_gbuffer_a].format;
-    gbuffer_normal_attachment_description.samples = RHI_SAMPLE_COUNT_1_BIT;
-    gbuffer_normal_attachment_description.loadOp  = RHI_ATTACHMENT_LOAD_OP_CLEAR;
-    gbuffer_normal_attachment_description.storeOp = RHI_ATTACHMENT_STORE_OP_STORE;
+    gbuffer_normal_attachment_description.format         = m_framebuffer.attachments[_main_camera_pass_gbuffer_a].format;
+    gbuffer_normal_attachment_description.samples        = RHI_SAMPLE_COUNT_1_BIT;
+    gbuffer_normal_attachment_description.loadOp         = RHI_ATTACHMENT_LOAD_OP_CLEAR;
+    gbuffer_normal_attachment_description.storeOp        = RHI_ATTACHMENT_STORE_OP_STORE;
     gbuffer_normal_attachment_description.stencilLoadOp  = RHI_ATTACHMENT_LOAD_OP_DONT_CARE;
     gbuffer_normal_attachment_description.stencilStoreOp = RHI_ATTACHMENT_STORE_OP_DONT_CARE;
     gbuffer_normal_attachment_description.initialLayout  = RHI_IMAGE_LAYOUT_UNDEFINED;
     gbuffer_normal_attachment_description.finalLayout    = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    RHIAttachmentDescription &gbuffer_metallic_roughness_shadingmodeid_attachment_description =
-        attachments[_main_camera_pass_gbuffer_b];
-    gbuffer_metallic_roughness_shadingmodeid_attachment_description.format =
-        m_framebuffer.attachments[_main_camera_pass_gbuffer_b].format;
-    gbuffer_metallic_roughness_shadingmodeid_attachment_description.samples = RHI_SAMPLE_COUNT_1_BIT;
-    gbuffer_metallic_roughness_shadingmodeid_attachment_description.loadOp  = RHI_ATTACHMENT_LOAD_OP_CLEAR;
-    gbuffer_metallic_roughness_shadingmodeid_attachment_description.storeOp = RHI_ATTACHMENT_STORE_OP_DONT_CARE;
-    gbuffer_metallic_roughness_shadingmodeid_attachment_description.stencilLoadOp = RHI_ATTACHMENT_LOAD_OP_DONT_CARE;
-    gbuffer_metallic_roughness_shadingmodeid_attachment_description.stencilStoreOp =
-        RHI_ATTACHMENT_STORE_OP_DONT_CARE;
-    gbuffer_metallic_roughness_shadingmodeid_attachment_description.initialLayout = RHI_IMAGE_LAYOUT_UNDEFINED;
-    gbuffer_metallic_roughness_shadingmodeid_attachment_description.finalLayout =
-        RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    RHIAttachmentDescription &gbuffer_metallic_roughness_shadingmodeid_attachment_description = attachments[_main_camera_pass_gbuffer_b];
+    gbuffer_metallic_roughness_shadingmodeid_attachment_description.format         = m_framebuffer.attachments[_main_camera_pass_gbuffer_b].format;
+    gbuffer_metallic_roughness_shadingmodeid_attachment_description.samples        = RHI_SAMPLE_COUNT_1_BIT;
+    gbuffer_metallic_roughness_shadingmodeid_attachment_description.loadOp         = RHI_ATTACHMENT_LOAD_OP_CLEAR;
+    gbuffer_metallic_roughness_shadingmodeid_attachment_description.storeOp        = RHI_ATTACHMENT_STORE_OP_DONT_CARE;
+    gbuffer_metallic_roughness_shadingmodeid_attachment_description.stencilLoadOp  = RHI_ATTACHMENT_LOAD_OP_DONT_CARE;
+    gbuffer_metallic_roughness_shadingmodeid_attachment_description.stencilStoreOp = RHI_ATTACHMENT_STORE_OP_DONT_CARE;
+    gbuffer_metallic_roughness_shadingmodeid_attachment_description.initialLayout  = RHI_IMAGE_LAYOUT_UNDEFINED;
+    gbuffer_metallic_roughness_shadingmodeid_attachment_description.finalLayout    = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     RHIAttachmentDescription &gbuffer_albedo_attachment_description = attachments[_main_camera_pass_gbuffer_c];
-    gbuffer_albedo_attachment_description.format  = m_framebuffer.attachments[_main_camera_pass_gbuffer_c].format;
-    gbuffer_albedo_attachment_description.samples = RHI_SAMPLE_COUNT_1_BIT;
-    gbuffer_albedo_attachment_description.loadOp  = RHI_ATTACHMENT_LOAD_OP_CLEAR;
-    gbuffer_albedo_attachment_description.storeOp = RHI_ATTACHMENT_STORE_OP_DONT_CARE;
+    gbuffer_albedo_attachment_description.format         = m_framebuffer.attachments[_main_camera_pass_gbuffer_c].format;
+    gbuffer_albedo_attachment_description.samples        = RHI_SAMPLE_COUNT_1_BIT;
+    gbuffer_albedo_attachment_description.loadOp         = RHI_ATTACHMENT_LOAD_OP_CLEAR;
+    gbuffer_albedo_attachment_description.storeOp        = RHI_ATTACHMENT_STORE_OP_DONT_CARE;
     gbuffer_albedo_attachment_description.stencilLoadOp  = RHI_ATTACHMENT_LOAD_OP_DONT_CARE;
     gbuffer_albedo_attachment_description.stencilStoreOp = RHI_ATTACHMENT_STORE_OP_DONT_CARE;
     gbuffer_albedo_attachment_description.initialLayout  = RHI_IMAGE_LAYOUT_UNDEFINED;
     gbuffer_albedo_attachment_description.finalLayout    = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    RHIAttachmentDescription &backup_odd_color_attachment_description =
-        attachments[_main_camera_pass_backup_buffer_odd];
-    backup_odd_color_attachment_description.format =
-        m_framebuffer.attachments[_main_camera_pass_backup_buffer_odd].format;
+    RHIAttachmentDescription &backup_odd_color_attachment_description = attachments[_main_camera_pass_backup_buffer_odd];
+    backup_odd_color_attachment_description.format         = m_framebuffer.attachments[_main_camera_pass_backup_buffer_odd].format;
     backup_odd_color_attachment_description.samples        = RHI_SAMPLE_COUNT_1_BIT;
     backup_odd_color_attachment_description.loadOp         = RHI_ATTACHMENT_LOAD_OP_CLEAR;
     backup_odd_color_attachment_description.storeOp        = RHI_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -172,10 +166,8 @@ void MainCameraPass::setupRenderPass() {
     backup_odd_color_attachment_description.initialLayout  = RHI_IMAGE_LAYOUT_UNDEFINED;
     backup_odd_color_attachment_description.finalLayout    = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    RHIAttachmentDescription &backup_even_color_attachment_description =
-        attachments[_main_camera_pass_backup_buffer_even];
-    backup_even_color_attachment_description.format =
-        m_framebuffer.attachments[_main_camera_pass_backup_buffer_even].format;
+    RHIAttachmentDescription &backup_even_color_attachment_description = attachments[_main_camera_pass_backup_buffer_even];
+    backup_even_color_attachment_description.format         = m_framebuffer.attachments[_main_camera_pass_backup_buffer_even].format;
     backup_even_color_attachment_description.samples        = RHI_SAMPLE_COUNT_1_BIT;
     backup_even_color_attachment_description.loadOp         = RHI_ATTACHMENT_LOAD_OP_CLEAR;
     backup_even_color_attachment_description.storeOp        = RHI_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -184,10 +176,8 @@ void MainCameraPass::setupRenderPass() {
     backup_even_color_attachment_description.initialLayout  = RHI_IMAGE_LAYOUT_UNDEFINED;
     backup_even_color_attachment_description.finalLayout    = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    RHIAttachmentDescription &post_process_odd_color_attachment_description =
-        attachments[_main_camera_pass_post_process_buffer_odd];
-    post_process_odd_color_attachment_description.format =
-        m_framebuffer.attachments[_main_camera_pass_post_process_buffer_odd].format;
+    RHIAttachmentDescription &post_process_odd_color_attachment_description = attachments[_main_camera_pass_post_process_buffer_odd];
+    post_process_odd_color_attachment_description.format         = m_framebuffer.attachments[_main_camera_pass_post_process_buffer_odd].format;
     post_process_odd_color_attachment_description.samples        = RHI_SAMPLE_COUNT_1_BIT;
     post_process_odd_color_attachment_description.loadOp         = RHI_ATTACHMENT_LOAD_OP_CLEAR;
     post_process_odd_color_attachment_description.storeOp        = RHI_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -196,10 +186,8 @@ void MainCameraPass::setupRenderPass() {
     post_process_odd_color_attachment_description.initialLayout  = RHI_IMAGE_LAYOUT_UNDEFINED;
     post_process_odd_color_attachment_description.finalLayout    = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    RHIAttachmentDescription &post_process_even_color_attachment_description =
-        attachments[_main_camera_pass_post_process_buffer_even];
-    post_process_even_color_attachment_description.format =
-        m_framebuffer.attachments[_main_camera_pass_post_process_buffer_even].format;
+    RHIAttachmentDescription &post_process_even_color_attachment_description = attachments[_main_camera_pass_post_process_buffer_even];
+    post_process_even_color_attachment_description.format         = m_framebuffer.attachments[_main_camera_pass_post_process_buffer_even].format;
     post_process_even_color_attachment_description.samples        = RHI_SAMPLE_COUNT_1_BIT;
     post_process_even_color_attachment_description.loadOp         = RHI_ATTACHMENT_LOAD_OP_CLEAR;
     post_process_even_color_attachment_description.storeOp        = RHI_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -209,17 +197,16 @@ void MainCameraPass::setupRenderPass() {
     post_process_even_color_attachment_description.finalLayout    = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     RHIAttachmentDescription &depth_attachment_description = attachments[_main_camera_pass_depth];
-    depth_attachment_description.format                   = m_rhi->getDepthImageInfo().depth_image_format;
-    depth_attachment_description.samples                  = RHI_SAMPLE_COUNT_1_BIT;
-    depth_attachment_description.loadOp                   = RHI_ATTACHMENT_LOAD_OP_CLEAR;
-    depth_attachment_description.storeOp                  = RHI_ATTACHMENT_STORE_OP_STORE;
-    depth_attachment_description.stencilLoadOp            = RHI_ATTACHMENT_LOAD_OP_DONT_CARE;
-    depth_attachment_description.stencilStoreOp           = RHI_ATTACHMENT_STORE_OP_DONT_CARE;
-    depth_attachment_description.initialLayout            = RHI_IMAGE_LAYOUT_UNDEFINED;
-    depth_attachment_description.finalLayout              = RHI_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    depth_attachment_description.format         = m_rhi->getDepthImageInfo().depth_image_format;
+    depth_attachment_description.samples        = RHI_SAMPLE_COUNT_1_BIT;
+    depth_attachment_description.loadOp         = RHI_ATTACHMENT_LOAD_OP_CLEAR;
+    depth_attachment_description.storeOp        = RHI_ATTACHMENT_STORE_OP_STORE;
+    depth_attachment_description.stencilLoadOp  = RHI_ATTACHMENT_LOAD_OP_DONT_CARE;
+    depth_attachment_description.stencilStoreOp = RHI_ATTACHMENT_STORE_OP_DONT_CARE;
+    depth_attachment_description.initialLayout  = RHI_IMAGE_LAYOUT_UNDEFINED;
+    depth_attachment_description.finalLayout    = RHI_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-    RHIAttachmentDescription &swapchain_image_attachment_description =
-        attachments[_main_camera_pass_swap_chain_image];
+    RHIAttachmentDescription &swapchain_image_attachment_description = attachments[_main_camera_pass_swap_chain_image];
     swapchain_image_attachment_description.format         = m_rhi->getSwapchainInfo().image_format;
     swapchain_image_attachment_description.samples        = RHI_SAMPLE_COUNT_1_BIT;
     swapchain_image_attachment_description.loadOp         = RHI_ATTACHMENT_LOAD_OP_CLEAR;
@@ -229,199 +216,179 @@ void MainCameraPass::setupRenderPass() {
     swapchain_image_attachment_description.initialLayout  = RHI_IMAGE_LAYOUT_UNDEFINED;
     swapchain_image_attachment_description.finalLayout    = RHI_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-    RHISubpassDescription subpasses[_main_camera_subpass_count] = {};
+    // ----- setupRenderPassSubpasses -----
+    // uint32_t backup_read_buffer = _main_camera_pass_backup_buffer_even;
+    // uint32_t backup_write_buffer = _main_camera_pass_backup_buffer_odd;
+    // uint32_t post_process_read_buffer = _main_camera_pass_post_process_buffer_odd;
+    // uint32_t post_process_write_buffer = _main_camera_pass_post_process_buffer_even;
+    // auto flipBackupBuffers = [&]() { std::swap(backup_read_buffer, backup_write_buffer); };
+    // auto flipPostProcessBuffers = [&]() { std::swap(post_process_read_buffer, post_process_write_buffer); };
+    auto setSubPass = [](RHISubpassDescription &subpass,
+                         const std::vector<RHIAttachmentReference>* input_attachments,
+                         const std::vector<RHIAttachmentReference>* color_attachments,
+                         const std::vector<RHIAttachmentReference>* depth_stencil_attachment,
+                         const std::vector<uint32_t>* preserve_attachments) {
+        subpass.pipelineBindPoint           = RHI_PIPELINE_BIND_POINT_GRAPHICS;
+        if (input_attachments) {
+            subpass.inputAttachmentCount    = input_attachments->size();
+            subpass.pInputAttachments       = input_attachments->data();
+        } else {
+            subpass.inputAttachmentCount    = 0;
+            subpass.pInputAttachments       = nullptr;
+        }
+        if (color_attachments) {
+            subpass.colorAttachmentCount    = color_attachments->size();
+            subpass.pColorAttachments       = color_attachments->data();
+        } else {
+            subpass.colorAttachmentCount    = 0;
+            subpass.pColorAttachments       = nullptr;
+        }
+        if (depth_stencil_attachment) {
+            subpass.pDepthStencilAttachment = depth_stencil_attachment->data();
+        } else {
+            subpass.pDepthStencilAttachment = nullptr;
+        }
+        if (preserve_attachments) {
+            subpass.preserveAttachmentCount = preserve_attachments->size();
+            subpass.pPreserveAttachments    = preserve_attachments->data();
+        } else {
+            subpass.preserveAttachmentCount = 0;
+            subpass.pPreserveAttachments    = nullptr;
+        }
+    };
 
-    RHIAttachmentReference base_pass_color_attachments_reference[3] = {};
-    base_pass_color_attachments_reference[0].attachment = &gbuffer_normal_attachment_description - attachments;
-    base_pass_color_attachments_reference[0].layout     = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    base_pass_color_attachments_reference[1].attachment =
-        &gbuffer_metallic_roughness_shadingmodeid_attachment_description - attachments;
-    base_pass_color_attachments_reference[1].layout     = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    base_pass_color_attachments_reference[2].attachment = &gbuffer_albedo_attachment_description - attachments;
-    base_pass_color_attachments_reference[2].layout     = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    std::vector<RHISubpassDescription> subpasses(_main_camera_subpass_count);
+    std::vector<RHIAttachmentReference> base_pass_color_attachments_reference {
+        {_main_camera_pass_gbuffer_a, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}, // gbuffer_normal_attachment
+        {_main_camera_pass_gbuffer_b, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}, // gbuffer_metallic_roughness_shadingmodeid_attachment
+        {_main_camera_pass_gbuffer_c, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}  // gbuffer_albedo_attachment
+    };
+    std::vector<RHIAttachmentReference> base_pass_depth_attachment_reference {
+        {_main_camera_pass_depth, RHI_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL} // depth_attachment_description
+    };
+    setSubPass(subpasses[_main_camera_subpass_basepass],
+               nullptr,
+               &base_pass_color_attachments_reference,
+               &base_pass_depth_attachment_reference,
+               nullptr);
 
-    RHIAttachmentReference base_pass_depth_attachment_reference {};
-    base_pass_depth_attachment_reference.attachment = &depth_attachment_description - attachments;
-    base_pass_depth_attachment_reference.layout     = RHI_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    std::vector<RHIAttachmentReference> deferred_lighting_pass_input_attachments_reference {
+        {_main_camera_pass_gbuffer_a, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}, // gbuffer_normal_attachment
+        {_main_camera_pass_gbuffer_b, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}, // gbuffer_metallic_roughness_shadingmodeid_attachment
+        {_main_camera_pass_gbuffer_c, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}, // gbuffer_albedo_attachment
+        {_main_camera_pass_depth, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}      // depth_attachment
+    };
+    std::vector<RHIAttachmentReference> deferred_lighting_pass_color_attachment_reference {
+        {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // backup_odd_color_attachment
+    };
+    setSubPass(subpasses[_main_camera_subpass_deferred_lighting],
+               &deferred_lighting_pass_input_attachments_reference,
+               &deferred_lighting_pass_color_attachment_reference,
+               nullptr,
+               nullptr);
 
-    RHISubpassDescription &base_pass = subpasses[_main_camera_subpass_basepass];
-    base_pass.pipelineBindPoint     = RHI_PIPELINE_BIND_POINT_GRAPHICS;
-    base_pass.colorAttachmentCount =
-        sizeof(base_pass_color_attachments_reference) / sizeof(base_pass_color_attachments_reference[0]);
-    base_pass.pColorAttachments       = &base_pass_color_attachments_reference[0];
-    base_pass.pDepthStencilAttachment = &base_pass_depth_attachment_reference;
-    base_pass.preserveAttachmentCount = 0;
-    base_pass.pPreserveAttachments    = NULL;
+    std::vector<RHIAttachmentReference> forward_lighting_pass_color_attachments_reference {
+        {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // backup_odd_color_attachment
+    };
+    std::vector<RHIAttachmentReference> forward_lighting_pass_depth_attachment_reference {
+        {_main_camera_pass_depth, RHI_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL} // depth_attachment
+    };
+    setSubPass(subpasses[_main_camera_subpass_forward_lighting],
+               nullptr,
+               &forward_lighting_pass_color_attachments_reference,
+               &forward_lighting_pass_depth_attachment_reference,
+               nullptr);
 
-    RHIAttachmentReference deferred_lighting_pass_input_attachments_reference[4] = {};
-    deferred_lighting_pass_input_attachments_reference[0].attachment =
-        &gbuffer_normal_attachment_description - attachments;
-    deferred_lighting_pass_input_attachments_reference[0].layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    deferred_lighting_pass_input_attachments_reference[1].attachment =
-        &gbuffer_metallic_roughness_shadingmodeid_attachment_description - attachments;
-    deferred_lighting_pass_input_attachments_reference[1].layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    deferred_lighting_pass_input_attachments_reference[2].attachment =
-        &gbuffer_albedo_attachment_description - attachments;
-    deferred_lighting_pass_input_attachments_reference[2].layout     = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    deferred_lighting_pass_input_attachments_reference[3].attachment = &depth_attachment_description - attachments;
-    deferred_lighting_pass_input_attachments_reference[3].layout     = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    std::vector<RHIAttachmentReference> tone_mapping_pass_input_attachment_reference {
+        {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL} // backup_odd_color_attachment
+    };
+    std::vector<RHIAttachmentReference> tone_mapping_pass_color_attachment_reference {
+        {_main_camera_pass_backup_buffer_even, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // backup_even_color_attachment
+    };
+    setSubPass(subpasses[_main_camera_subpass_tone_mapping],
+               &tone_mapping_pass_input_attachment_reference,
+                &tone_mapping_pass_color_attachment_reference,
+               nullptr,
+               nullptr);
 
-    RHIAttachmentReference deferred_lighting_pass_color_attachment_reference[1] = {};
-    deferred_lighting_pass_color_attachment_reference[0].attachment =
-        &backup_odd_color_attachment_description - attachments;
-    deferred_lighting_pass_color_attachment_reference[0].layout = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    std::vector<RHIAttachmentReference> color_grading_pass_input_attachment_reference {
+        {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL} // backup_odd_color_attachment
+    };
+    std::vector<RHIAttachmentReference> color_grading_pass_color_attachment_reference;
+    if (m_enable_fxaa) {
+        color_grading_pass_color_attachment_reference.push_back( // backup_even_color_attachment
+            {_main_camera_pass_backup_buffer_even, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+    } else {
+        color_grading_pass_color_attachment_reference.push_back( // backup_odd_color_attachment
+            {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+    }
+    setSubPass(subpasses[_main_camera_subpass_color_grading],
+               &color_grading_pass_input_attachment_reference,
+               &color_grading_pass_color_attachment_reference,
+               nullptr,
+               nullptr);
 
-    RHISubpassDescription &deferred_lighting_pass = subpasses[_main_camera_subpass_deferred_lighting];
-    deferred_lighting_pass.pipelineBindPoint    = RHI_PIPELINE_BIND_POINT_GRAPHICS;
-    deferred_lighting_pass.inputAttachmentCount = sizeof(deferred_lighting_pass_input_attachments_reference) /
-                                                  sizeof(deferred_lighting_pass_input_attachments_reference[0]);
-    deferred_lighting_pass.pInputAttachments    = &deferred_lighting_pass_input_attachments_reference[0];
-    deferred_lighting_pass.colorAttachmentCount = sizeof(deferred_lighting_pass_color_attachment_reference) /
-                                                  sizeof(deferred_lighting_pass_color_attachment_reference[0]);
-    deferred_lighting_pass.pColorAttachments       = &deferred_lighting_pass_color_attachment_reference[0];
-    deferred_lighting_pass.pDepthStencilAttachment = NULL;
-    deferred_lighting_pass.preserveAttachmentCount = 0;
-    deferred_lighting_pass.pPreserveAttachments    = NULL;
+    std::vector<RHIAttachmentReference> vignette_pass_input_attachment_reference {
+        {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL} // backup_odd_color_attachment
+    };
+    std::vector<RHIAttachmentReference> vignette_pass_color_attachment_reference;
+    if (m_enable_fxaa) {
+        vignette_pass_color_attachment_reference.push_back( // post_process_even_color_attachment
+            {_main_camera_pass_post_process_buffer_even, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+    } else {
+        vignette_pass_color_attachment_reference.push_back( // backup_odd_color_attachment
+            {_main_camera_pass_backup_buffer_even, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+    }
+    setSubPass(subpasses[_main_camera_subpass_vignette],
+               &vignette_pass_input_attachment_reference,
+               &vignette_pass_color_attachment_reference,
+               nullptr,
+               nullptr);
 
-    RHIAttachmentReference forward_lighting_pass_color_attachments_reference[1] = {};
-    forward_lighting_pass_color_attachments_reference[0].attachment =
-        &backup_odd_color_attachment_description - attachments;
-    forward_lighting_pass_color_attachments_reference[0].layout = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    std::vector<RHIAttachmentReference> fxaa_pass_input_attachment_reference;
+    if (m_enable_fxaa) {
+        fxaa_pass_input_attachment_reference.push_back( // post_process_odd_color_attachment
+            {_main_camera_pass_post_process_buffer_odd, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
+    } else {
+        fxaa_pass_input_attachment_reference.push_back( // backup_odd_color_attachment
+            {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
+    }
+    std::vector<RHIAttachmentReference> fxaa_pass_color_attachment_reference {
+        {_main_camera_pass_backup_buffer_even, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // backup_even_color_attachment
+    };
+    setSubPass(subpasses[_main_camera_subpass_fxaa],
+               &fxaa_pass_input_attachment_reference,
+               &fxaa_pass_color_attachment_reference,
+               nullptr,
+               nullptr);
 
-    RHIAttachmentReference forward_lighting_pass_depth_attachment_reference {};
-    forward_lighting_pass_depth_attachment_reference.attachment = &depth_attachment_description - attachments;
-    forward_lighting_pass_depth_attachment_reference.layout     = RHI_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    std::vector<RHIAttachmentReference> ui_pass_color_attachment_reference {
+        {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // backup_odd_color_attachment
+    };
+    std::vector<uint32_t> ui_pass_preserve_attachment_reference {
+        _main_camera_pass_backup_buffer_even // backup_even_color_attachment
+    };
+    setSubPass(subpasses[_main_camera_subpass_ui],
+               nullptr,
+               &ui_pass_color_attachment_reference,
+               nullptr,
+               &ui_pass_preserve_attachment_reference);
 
-    RHISubpassDescription &forward_lighting_pass = subpasses[_main_camera_subpass_forward_lighting];
-    forward_lighting_pass.pipelineBindPoint     = RHI_PIPELINE_BIND_POINT_GRAPHICS;
-    forward_lighting_pass.inputAttachmentCount  = 0U;
-    forward_lighting_pass.pInputAttachments     = NULL;
-    forward_lighting_pass.colorAttachmentCount  = sizeof(forward_lighting_pass_color_attachments_reference) /
-                                                  sizeof(forward_lighting_pass_color_attachments_reference[0]);
-    forward_lighting_pass.pColorAttachments       = &forward_lighting_pass_color_attachments_reference[0];
-    forward_lighting_pass.pDepthStencilAttachment = &forward_lighting_pass_depth_attachment_reference;
-    forward_lighting_pass.preserveAttachmentCount = 0;
-    forward_lighting_pass.pPreserveAttachments    = NULL;
+    std::vector<RHIAttachmentReference> combine_ui_pass_input_attachments_reference {
+        {_main_camera_pass_backup_buffer_even, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}, // backup_even_color_attachment
+        {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}   // backup_odd_color_attachment
+    };
+    std::vector<RHIAttachmentReference> combine_ui_pass_color_attachment_reference {
+        {_main_camera_pass_swap_chain_image, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // swapchain_image_attachment_description
+    };
+    setSubPass(subpasses[_main_camera_subpass_combine_ui],
+               &combine_ui_pass_input_attachments_reference,
+               &combine_ui_pass_color_attachment_reference,
+               nullptr,
+               nullptr);
 
-    RHIAttachmentReference tone_mapping_pass_input_attachment_reference {};
-    tone_mapping_pass_input_attachment_reference.attachment = &backup_odd_color_attachment_description - attachments;
-    tone_mapping_pass_input_attachment_reference.layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-    RHIAttachmentReference tone_mapping_pass_color_attachment_reference {};
-    tone_mapping_pass_color_attachment_reference.attachment = &backup_even_color_attachment_description - attachments;
-    tone_mapping_pass_color_attachment_reference.layout = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    RHISubpassDescription &tone_mapping_pass   = subpasses[_main_camera_subpass_tone_mapping];
-    tone_mapping_pass.pipelineBindPoint       = RHI_PIPELINE_BIND_POINT_GRAPHICS;
-    tone_mapping_pass.inputAttachmentCount    = 1;
-    tone_mapping_pass.pInputAttachments       = &tone_mapping_pass_input_attachment_reference;
-    tone_mapping_pass.colorAttachmentCount    = 1;
-    tone_mapping_pass.pColorAttachments       = &tone_mapping_pass_color_attachment_reference;
-    tone_mapping_pass.pDepthStencilAttachment = NULL;
-    tone_mapping_pass.preserveAttachmentCount = 0;
-    tone_mapping_pass.pPreserveAttachments    = NULL;
-
-    RHIAttachmentReference color_grading_pass_input_attachment_reference {};
-    color_grading_pass_input_attachment_reference.attachment = &backup_even_color_attachment_description - attachments;
-    color_grading_pass_input_attachment_reference.layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-    RHIAttachmentReference color_grading_pass_color_attachment_reference {};
-    if (m_enable_fxaa)
-        color_grading_pass_color_attachment_reference.attachment = &post_process_odd_color_attachment_description - attachments;
-    else
-        color_grading_pass_color_attachment_reference.attachment = &backup_odd_color_attachment_description - attachments;
-    color_grading_pass_color_attachment_reference.layout = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    RHISubpassDescription &color_grading_pass   = subpasses[_main_camera_subpass_color_grading];
-    color_grading_pass.pipelineBindPoint       = RHI_PIPELINE_BIND_POINT_GRAPHICS;
-    color_grading_pass.inputAttachmentCount    = 1;
-    color_grading_pass.pInputAttachments       = &color_grading_pass_input_attachment_reference;
-    color_grading_pass.colorAttachmentCount    = 1;
-    color_grading_pass.pColorAttachments       = &color_grading_pass_color_attachment_reference;
-    color_grading_pass.pDepthStencilAttachment = NULL;
-    color_grading_pass.preserveAttachmentCount = 0;
-    color_grading_pass.pPreserveAttachments    = NULL;
-
-    RHIAttachmentReference vignette_pass_input_attachment_reference {};
-    vignette_pass_input_attachment_reference.attachment = &backup_odd_color_attachment_description - attachments;
-    vignette_pass_input_attachment_reference.layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-    RHIAttachmentReference vignette_pass_color_attachment_reference {};
-    if (m_enable_fxaa)
-        vignette_pass_color_attachment_reference.attachment = &post_process_even_color_attachment_description - attachments;
-    else
-        vignette_pass_color_attachment_reference.attachment = &backup_even_color_attachment_description - attachments;
-    vignette_pass_color_attachment_reference.layout = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    RHISubpassDescription &vignette_pass   = subpasses[_main_camera_subpass_vignette];
-    vignette_pass.pipelineBindPoint       = RHI_PIPELINE_BIND_POINT_GRAPHICS;
-    vignette_pass.inputAttachmentCount    = 1;
-    vignette_pass.pInputAttachments       = &vignette_pass_input_attachment_reference;
-    vignette_pass.colorAttachmentCount    = 1;
-    vignette_pass.pColorAttachments       = &vignette_pass_color_attachment_reference;
-    vignette_pass.pDepthStencilAttachment = NULL;
-    vignette_pass.preserveAttachmentCount = 0;
-    vignette_pass.pPreserveAttachments    = NULL;
-
-    RHIAttachmentReference fxaa_pass_input_attachment_reference {};
-    if (m_enable_fxaa)
-        fxaa_pass_input_attachment_reference.attachment = &post_process_odd_color_attachment_description - attachments;
-    else
-        fxaa_pass_input_attachment_reference.attachment = &backup_odd_color_attachment_description - attachments;
-    fxaa_pass_input_attachment_reference.layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-    RHIAttachmentReference fxaa_pass_color_attachment_reference {};
-    fxaa_pass_color_attachment_reference.attachment = &backup_even_color_attachment_description - attachments;
-    fxaa_pass_color_attachment_reference.layout     = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    RHISubpassDescription &fxaa_pass   = subpasses[_main_camera_subpass_fxaa];
-    fxaa_pass.pipelineBindPoint       = RHI_PIPELINE_BIND_POINT_GRAPHICS;
-    fxaa_pass.inputAttachmentCount    = 1;
-    fxaa_pass.pInputAttachments       = &fxaa_pass_input_attachment_reference;
-    fxaa_pass.colorAttachmentCount    = 1;
-    fxaa_pass.pColorAttachments       = &fxaa_pass_color_attachment_reference;
-    fxaa_pass.pDepthStencilAttachment = NULL;
-    fxaa_pass.preserveAttachmentCount = 0;
-    fxaa_pass.pPreserveAttachments    = NULL;
-
-    RHIAttachmentReference ui_pass_color_attachment_reference {};
-    ui_pass_color_attachment_reference.attachment = &backup_odd_color_attachment_description - attachments;
-    ui_pass_color_attachment_reference.layout     = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    uint32_t ui_pass_preserve_attachment = &backup_even_color_attachment_description - attachments;
-
-    RHISubpassDescription &ui_pass  = subpasses[_main_camera_subpass_ui];
-    ui_pass.pipelineBindPoint       = RHI_PIPELINE_BIND_POINT_GRAPHICS;
-    ui_pass.inputAttachmentCount    = 0;
-    ui_pass.pInputAttachments       = NULL;
-    ui_pass.colorAttachmentCount    = 1;
-    ui_pass.pColorAttachments       = &ui_pass_color_attachment_reference;
-    ui_pass.pDepthStencilAttachment = NULL;
-    ui_pass.preserveAttachmentCount = 1;
-    ui_pass.pPreserveAttachments    = &ui_pass_preserve_attachment;
-
-    RHIAttachmentReference combine_ui_pass_input_attachments_reference[2] = {};
-    combine_ui_pass_input_attachments_reference[0].attachment = &backup_even_color_attachment_description - attachments;
-    combine_ui_pass_input_attachments_reference[0].layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    combine_ui_pass_input_attachments_reference[1].attachment = &backup_odd_color_attachment_description - attachments;
-    combine_ui_pass_input_attachments_reference[1].layout = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-    RHIAttachmentReference combine_ui_pass_color_attachment_reference {};
-    combine_ui_pass_color_attachment_reference.attachment = &swapchain_image_attachment_description - attachments;
-    combine_ui_pass_color_attachment_reference.layout     = RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    RHISubpassDescription &combine_ui_pass  = subpasses[_main_camera_subpass_combine_ui];
-    combine_ui_pass.pipelineBindPoint       = RHI_PIPELINE_BIND_POINT_GRAPHICS;
-    combine_ui_pass.inputAttachmentCount    = sizeof(combine_ui_pass_input_attachments_reference) /
-                                              sizeof(combine_ui_pass_input_attachments_reference[0]);
-    combine_ui_pass.pInputAttachments       = combine_ui_pass_input_attachments_reference;
-    combine_ui_pass.colorAttachmentCount    = 1;
-    combine_ui_pass.pColorAttachments       = &combine_ui_pass_color_attachment_reference;
-    combine_ui_pass.pDepthStencilAttachment = NULL;
-    combine_ui_pass.preserveAttachmentCount = 0;
-    combine_ui_pass.pPreserveAttachments    = NULL;
-
-    RHISubpassDependency dependencies[9] = {};
+    // ----- setupRenderPassDependencies -----
+    std::vector<RHISubpassDependency> dependencies(9);
     auto setCommonMaskAndFlags = [](RHISubpassDependency &dependency) {
         dependency.srcStageMask = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         dependency.dstStageMask = RHI_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | RHI_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -481,12 +448,12 @@ void MainCameraPass::setupRenderPass() {
 
     RHIRenderPassCreateInfo renderpass_create_info {};
     renderpass_create_info.sType           = RHI_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderpass_create_info.attachmentCount = (sizeof(attachments) / sizeof(attachments[0]));
-    renderpass_create_info.pAttachments    = attachments;
-    renderpass_create_info.subpassCount    = (sizeof(subpasses) / sizeof(subpasses[0]));
-    renderpass_create_info.pSubpasses      = subpasses;
-    renderpass_create_info.dependencyCount = (sizeof(dependencies) / sizeof(dependencies[0]));
-    renderpass_create_info.pDependencies   = dependencies;
+    renderpass_create_info.attachmentCount = attachments.size();
+    renderpass_create_info.pAttachments    = attachments.data();
+    renderpass_create_info.subpassCount    = subpasses.size();
+    renderpass_create_info.pSubpasses      = subpasses.data();
+    renderpass_create_info.dependencyCount = dependencies.size();
+    renderpass_create_info.pDependencies   = dependencies.data();
 
     if (m_rhi->createRenderPass(&renderpass_create_info, m_framebuffer.render_pass) != RHI_SUCCESS)
         throw std::runtime_error("failed to create render pass");
@@ -1920,6 +1887,26 @@ std::map<VulkanPBRMaterial*, std::map<VulkanMesh*, std::vector<MeshNode>>> MainC
     return drawcall_batch;
 }
 
+template<typename T>
+MainCameraPass::RingBufferAllocation<T> MainCameraPass::allocateRingBufferSpace() {
+    uint32_t dynamic_offset = roundUp(
+        m_global_render_resource->_storage_buffer._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()],
+        m_global_render_resource->_storage_buffer._min_storage_buffer_offset_alignment);
+
+    m_global_render_resource->_storage_buffer._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] =
+            dynamic_offset + sizeof(T);
+
+    assert(m_global_render_resource->_storage_buffer._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] <=
+          (m_global_render_resource->_storage_buffer._global_upload_ringbuffers_begin[m_rhi->getCurrentFrameIndex()] +
+           m_global_render_resource->_storage_buffer._global_upload_ringbuffers_size[m_rhi->getCurrentFrameIndex()]));
+
+    T* data_ptr = reinterpret_cast<T*>(
+        reinterpret_cast<uintptr_t>(m_global_render_resource->_storage_buffer._global_upload_ringbuffer_memory_pointer) +
+        dynamic_offset);
+
+    return {data_ptr, dynamic_offset};
+}
+
 void MainCameraPass::drawMesh(RenderPipeLineType render_pipeline_type) {
     // reorganize mesh
     auto drawcall_batch = reorganizeMeshNodes(m_visible_nodes.p_main_camera_visible_mesh_nodes);
@@ -1931,24 +1918,9 @@ void MainCameraPass::drawMesh(RenderPipeLineType render_pipeline_type) {
     m_rhi->cmdSetScissorPFN(m_rhi->getCurrentCommandBuffer(), 0, 1, m_rhi->getSwapchainInfo().scissor);
 
     // perframe storage buffer
-    uint32_t perframe_dynamic_offset =
-        roundUp(m_global_render_resource->_storage_buffer
-                ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()],
-                m_global_render_resource->_storage_buffer._min_storage_buffer_offset_alignment);
-
-    m_global_render_resource->_storage_buffer._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] =
-            perframe_dynamic_offset + sizeof(MeshPerframeStorageBufferObject);
-    assert(m_global_render_resource->_storage_buffer
-           ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] <=
-           (m_global_render_resource->_storage_buffer
-            ._global_upload_ringbuffers_begin[m_rhi->getCurrentFrameIndex()] +
-            m_global_render_resource->_storage_buffer
-            ._global_upload_ringbuffers_size[m_rhi->getCurrentFrameIndex()]));
-
-    (*reinterpret_cast<MeshPerframeStorageBufferObject*>(
-         reinterpret_cast<uintptr_t>(
-             m_global_render_resource->_storage_buffer._global_upload_ringbuffer_memory_pointer) +
-         perframe_dynamic_offset)) = m_mesh_perframe_storage_buffer_object;
+    auto perframe_allocation = allocateRingBufferSpace<MeshPerframeStorageBufferObject>();
+    *perframe_allocation.data_ptr = m_mesh_perframe_storage_buffer_object;
+    uint32_t perframe_dynamic_offset = perframe_allocation.dynamic_offset;
 
     for (auto &pair1 : drawcall_batch) {
         VulkanPBRMaterial &material = (*pair1.first);
@@ -1967,8 +1939,8 @@ void MainCameraPass::drawMesh(RenderPipeLineType render_pipeline_type) {
         // TODO: render from near to far
 
         for (auto &pair2 : mesh_instanced) {
-            VulkanMesh &mesh       = (*pair2.first);
-            auto       &mesh_nodes = pair2.second;
+            VulkanMesh &mesh = (*pair2.first);
+            auto &mesh_nodes = pair2.second;
 
             uint32_t total_instance_count = static_cast<uint32_t>(mesh_nodes.size());
             if (total_instance_count > 0) {
@@ -1981,7 +1953,6 @@ void MainCameraPass::drawMesh(RenderPipeLineType render_pipeline_type) {
                                                 &mesh.mesh_vertex_blending_descriptor_set,
                                                 0,
                                                 NULL);
-
 
                 RHIBuffer* vertex_buffers[] = {mesh.mesh_vertex_position_buffer,
                                                mesh.mesh_vertex_varying_enable_blending_buffer,
@@ -2009,31 +1980,13 @@ void MainCameraPass::drawMesh(RenderPipeLineType render_pipeline_type) {
                         drawcall_max_instance_count;
 
                     // per drawcall storage buffer
-                    uint32_t perdrawcall_dynamic_offset =
-                        roundUp(m_global_render_resource->_storage_buffer
-                                ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()],
-                                m_global_render_resource->_storage_buffer._min_storage_buffer_offset_alignment);
-                    m_global_render_resource->_storage_buffer
-                    ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] =
-                        perdrawcall_dynamic_offset + sizeof(MeshPerdrawcallStorageBufferObject);
-                    assert(m_global_render_resource->_storage_buffer
-                           ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] <=
-                           (m_global_render_resource->_storage_buffer
-                            ._global_upload_ringbuffers_begin[m_rhi->getCurrentFrameIndex()] +
-                            m_global_render_resource->_storage_buffer
-                            ._global_upload_ringbuffers_size[m_rhi->getCurrentFrameIndex()]));
-
-                    MeshPerdrawcallStorageBufferObject &perdrawcall_storage_buffer_object =
-                        (*reinterpret_cast<MeshPerdrawcallStorageBufferObject*>(
-                             reinterpret_cast<uintptr_t>(m_global_render_resource->_storage_buffer
-                                                         ._global_upload_ringbuffer_memory_pointer) +
-                             perdrawcall_dynamic_offset));
+                    auto per_drawcall_allocation = allocateRingBufferSpace<MeshPerdrawcallStorageBufferObject>();
+                    uint32_t per_drawcall_dynamic_offset = per_drawcall_allocation.dynamic_offset;
                     for (uint32_t i = 0; i < current_instance_count; ++i) {
-                        perdrawcall_storage_buffer_object.mesh_instances[i].model_matrix =
+                        per_drawcall_allocation.data_ptr->mesh_instances[i].model_matrix =
                             *mesh_nodes[drawcall_max_instance_count * drawcall_index + i].model_matrix;
-                        perdrawcall_storage_buffer_object.mesh_instances[i].enable_vertex_blending =
-                            mesh_nodes[drawcall_max_instance_count * drawcall_index + i].joint_matrices ? 1.0 :
-                            -1.0;
+                        per_drawcall_allocation.data_ptr->mesh_instances[i].enable_vertex_blending =
+                            mesh_nodes[drawcall_max_instance_count * drawcall_index + i].joint_matrices ? 1.0f : -1.0f;
                     }
 
                     // per drawcall vertex blending storage buffer
@@ -2046,47 +1999,24 @@ void MainCameraPass::drawMesh(RenderPipeLineType render_pipeline_type) {
                         }
                     }
                     if (least_one_enable_vertex_blending) {
-                        per_drawcall_vertex_blending_dynamic_offset =
-                            roundUp(m_global_render_resource->_storage_buffer
-                                    ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()],
-                                    m_global_render_resource->_storage_buffer._min_storage_buffer_offset_alignment);
-                        m_global_render_resource->_storage_buffer
-                        ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] =
-                            per_drawcall_vertex_blending_dynamic_offset +
-                            sizeof(MeshPerdrawcallVertexBlendingStorageBufferObject);
-                        assert(m_global_render_resource->_storage_buffer
-                               ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] <=
-                               (m_global_render_resource->_storage_buffer
-                                ._global_upload_ringbuffers_begin[m_rhi->getCurrentFrameIndex()] +
-                                m_global_render_resource->_storage_buffer
-                                ._global_upload_ringbuffers_size[m_rhi->getCurrentFrameIndex()]));
-
-                        MeshPerdrawcallVertexBlendingStorageBufferObject &
-                        per_drawcall_vertex_blending_storage_buffer_object =
-                            (*reinterpret_cast<MeshPerdrawcallVertexBlendingStorageBufferObject*>(
-                                 reinterpret_cast<uintptr_t>(m_global_render_resource->_storage_buffer
-                                                             ._global_upload_ringbuffer_memory_pointer) +
-                                 per_drawcall_vertex_blending_dynamic_offset));
+                        auto per_drawcall_vertex_blending_allocation = allocateRingBufferSpace<MeshPerdrawcallVertexBlendingStorageBufferObject>();
+                        per_drawcall_vertex_blending_dynamic_offset = per_drawcall_vertex_blending_allocation.dynamic_offset;
                         for (uint32_t i = 0; i < current_instance_count; ++i) {
                             if (mesh_nodes[drawcall_max_instance_count * drawcall_index + i].joint_matrices) {
-                                for (uint32_t j = 0;
-                                     j < mesh_nodes[drawcall_max_instance_count * drawcall_index + i].joint_count;
-                                     ++j) {
-                                    per_drawcall_vertex_blending_storage_buffer_object
-                                    .joint_matrices[s_mesh_vertex_blending_max_joint_count * i + j] =
-                                        mesh_nodes[drawcall_max_instance_count * drawcall_index + i]
-                                        .joint_matrices[j];
+                                for (uint32_t j = 0; j < mesh_nodes[drawcall_max_instance_count * drawcall_index + i].joint_count; ++j) {
+                                    per_drawcall_vertex_blending_allocation.data_ptr->joint_matrices[s_mesh_vertex_blending_max_joint_count * i + j] =
+                                        mesh_nodes[drawcall_max_instance_count * drawcall_index + i].joint_matrices[j];
                                 }
                             }
                         }
-                    } else
+                    } else {
                         per_drawcall_vertex_blending_dynamic_offset = 0;
+                    }
 
                     // bind perdrawcall
                     uint32_t dynamic_offsets[3] = {perframe_dynamic_offset,
-                                                   perdrawcall_dynamic_offset,
-                                                   per_drawcall_vertex_blending_dynamic_offset
-                                                  };
+                                                   per_drawcall_dynamic_offset,
+                                                   per_drawcall_vertex_blending_dynamic_offset};
                     m_rhi->cmdBindDescriptorSetsPFN(m_rhi->getCurrentCommandBuffer(),
                                                     RHI_PIPELINE_BIND_POINT_GRAPHICS,
                                                     m_render_pipelines[render_pipeline_type].layout,
@@ -2116,30 +2046,14 @@ void MainCameraPass::drawDeferredLighting() {
     m_rhi->cmdSetViewportPFN(m_rhi->getCurrentCommandBuffer(), 0, 1, m_rhi->getSwapchainInfo().viewport);
     m_rhi->cmdSetScissorPFN(m_rhi->getCurrentCommandBuffer(), 0, 1, m_rhi->getSwapchainInfo().scissor);
 
-    uint32_t perframe_dynamic_offset =
-        roundUp(m_global_render_resource->_storage_buffer
-                ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()],
-                m_global_render_resource->_storage_buffer._min_storage_buffer_offset_alignment);
-
-    m_global_render_resource->_storage_buffer._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] =
-            perframe_dynamic_offset + sizeof(MeshPerframeStorageBufferObject);
-    assert(m_global_render_resource->_storage_buffer
-           ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] <=
-           (m_global_render_resource->_storage_buffer
-            ._global_upload_ringbuffers_begin[m_rhi->getCurrentFrameIndex()] +
-            m_global_render_resource->_storage_buffer
-            ._global_upload_ringbuffers_size[m_rhi->getCurrentFrameIndex()]));
-
-    (*reinterpret_cast<MeshPerframeStorageBufferObject*>(
-         reinterpret_cast<uintptr_t>(
-             m_global_render_resource->_storage_buffer._global_upload_ringbuffer_memory_pointer) +
-         perframe_dynamic_offset)) = m_mesh_perframe_storage_buffer_object;
+    auto perframe_allocation = allocateRingBufferSpace<MeshPerframeStorageBufferObject>();
+    *perframe_allocation.data_ptr = m_mesh_perframe_storage_buffer_object;
+    uint32_t perframe_dynamic_offset = perframe_allocation.dynamic_offset;
 
     RHIDescriptorSet* descriptor_sets[3] = {m_descriptor_infos[_mesh_global].descriptor_set,
                                             m_descriptor_infos[_deferred_lighting].descriptor_set,
-                                            m_descriptor_infos[_skybox].descriptor_set
-                                           };
-    uint32_t        dynamic_offsets[4] = {perframe_dynamic_offset, perframe_dynamic_offset, 0, 0};
+                                            m_descriptor_infos[_skybox].descriptor_set};
+    uint32_t dynamic_offsets[4] = {perframe_dynamic_offset, perframe_dynamic_offset, 0, 0};
     m_rhi->cmdBindDescriptorSetsPFN(m_rhi->getCurrentCommandBuffer(),
                                     RHI_PIPELINE_BIND_POINT_GRAPHICS,
                                     m_render_pipelines[_render_pipeline_type_deferred_lighting].layout,
@@ -2152,25 +2066,11 @@ void MainCameraPass::drawDeferredLighting() {
     m_rhi->cmdDraw(m_rhi->getCurrentCommandBuffer(), 3, 1, 0, 0);
 }
 
+// forward rendering 的天空盒绘制，延迟渲染的天空盒被整合在 drawDeferredLighting() 中
 void MainCameraPass::drawSkybox() {
-    uint32_t perframe_dynamic_offset =
-        roundUp(m_global_render_resource->_storage_buffer
-                ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()],
-                m_global_render_resource->_storage_buffer._min_storage_buffer_offset_alignment);
-
-    m_global_render_resource->_storage_buffer._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] =
-            perframe_dynamic_offset + sizeof(MeshPerframeStorageBufferObject);
-    assert(m_global_render_resource->_storage_buffer
-           ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] <=
-           (m_global_render_resource->_storage_buffer
-            ._global_upload_ringbuffers_begin[m_rhi->getCurrentFrameIndex()] +
-            m_global_render_resource->_storage_buffer
-            ._global_upload_ringbuffers_size[m_rhi->getCurrentFrameIndex()]));
-
-    (*reinterpret_cast<MeshPerframeStorageBufferObject*>(
-         reinterpret_cast<uintptr_t>(
-             m_global_render_resource->_storage_buffer._global_upload_ringbuffer_memory_pointer) +
-         perframe_dynamic_offset)) = m_mesh_perframe_storage_buffer_object;
+    auto perframe_allocation = allocateRingBufferSpace<MeshPerframeStorageBufferObject>();
+    *perframe_allocation.data_ptr = m_mesh_perframe_storage_buffer_object;
+    uint32_t perframe_dynamic_offset = perframe_allocation.dynamic_offset;
 
     m_rhi->cmdBindPipelinePFN(m_rhi->getCurrentCommandBuffer(),
                               RHI_PIPELINE_BIND_POINT_GRAPHICS,
@@ -2190,24 +2090,9 @@ void MainCameraPass::drawAxis() {
     if (!m_is_show_axis)
         return;
 
-    uint32_t perframe_dynamic_offset =
-        roundUp(m_global_render_resource->_storage_buffer
-                ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()],
-                m_global_render_resource->_storage_buffer._min_storage_buffer_offset_alignment);
-
-    m_global_render_resource->_storage_buffer._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] =
-            perframe_dynamic_offset + sizeof(MeshPerframeStorageBufferObject);
-    assert(m_global_render_resource->_storage_buffer
-           ._global_upload_ringbuffers_end[m_rhi->getCurrentFrameIndex()] <=
-           (m_global_render_resource->_storage_buffer
-            ._global_upload_ringbuffers_begin[m_rhi->getCurrentFrameIndex()] +
-            m_global_render_resource->_storage_buffer
-            ._global_upload_ringbuffers_size[m_rhi->getCurrentFrameIndex()]));
-
-    (*reinterpret_cast<MeshPerframeStorageBufferObject*>(
-         reinterpret_cast<uintptr_t>(
-             m_global_render_resource->_storage_buffer._global_upload_ringbuffer_memory_pointer) +
-         perframe_dynamic_offset)) = m_mesh_perframe_storage_buffer_object;
+    auto perframe_allocation = allocateRingBufferSpace<MeshPerframeStorageBufferObject>();
+    *perframe_allocation.data_ptr = m_mesh_perframe_storage_buffer_object;
+    uint32_t perframe_dynamic_offset = perframe_allocation.dynamic_offset;
 
     m_rhi->cmdBindPipelinePFN(m_rhi->getCurrentCommandBuffer(),
                               RHI_PIPELINE_BIND_POINT_GRAPHICS,
@@ -2228,8 +2113,7 @@ void MainCameraPass::drawAxis() {
 
     RHIBuffer* vertex_buffers[3] = {m_visible_nodes.p_axis_node->ref_mesh->mesh_vertex_position_buffer,
                                     m_visible_nodes.p_axis_node->ref_mesh->mesh_vertex_varying_enable_blending_buffer,
-                                    m_visible_nodes.p_axis_node->ref_mesh->mesh_vertex_varying_buffer
-                                    };
+                                    m_visible_nodes.p_axis_node->ref_mesh->mesh_vertex_varying_buffer};
     RHIDeviceSize offsets[3] = {0, 0, 0};
     m_rhi->cmdBindVertexBuffersPFN(m_rhi->getCurrentCommandBuffer(),
                                    0,
@@ -2251,8 +2135,6 @@ void MainCameraPass::drawAxis() {
                              0,
                              0);
 }
-
-RHICommandBuffer* MainCameraPass::getRenderCommandBuffer() { return m_rhi->getCurrentCommandBuffer(); }
 
 void MainCameraPass::setupParticlePass() {
     m_particle_pass->setDepthAndNormalImage(m_rhi->getDepthImageInfo().depth_image,

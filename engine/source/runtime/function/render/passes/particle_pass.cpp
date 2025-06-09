@@ -1066,7 +1066,8 @@ void ParticlePass::setupPipelines() {
     &pipelineCache))
     {
         throw std::runtime_error("create particle cache");
-    }*/
+    }
+    */
 
     struct SpecializationData {
         uint32_t BUFFER_ELEMENT_COUNT = 32;

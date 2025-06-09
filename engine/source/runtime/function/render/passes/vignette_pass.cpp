@@ -16,7 +16,7 @@ void VignettePass::initialize(const RenderPassInitInfo* init_info) {
     m_framebuffer.render_pass                  = _init_info->render_pass;
 
     setupDescriptorSetLayout();
-    setupPipelines();
+    setupPipeline();
     setupDescriptorSet();
     updateAfterFramebufferRecreate(_init_info->input_attachment);
 }
@@ -44,7 +44,7 @@ void VignettePass::setupDescriptorSetLayout() {
         throw std::runtime_error("create post process global layout");
 }
 
-void VignettePass::setupPipelines() {
+void VignettePass::setupPipeline() {
     m_render_pipelines.resize(1);
 
     RHIDescriptorSetLayout*      descriptorset_layouts[1] = {m_descriptor_infos[0].layout};

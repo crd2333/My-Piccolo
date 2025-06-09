@@ -97,7 +97,7 @@ public:
 
     void updateAfterFramebufferRecreate();
 
-    RHICommandBuffer* getRenderCommandBuffer();
+    RHICommandBuffer* getRenderCommandBuffer() { return m_rhi->getCurrentCommandBuffer(); }
 
     void setParticlePass(std::shared_ptr<ParticlePass> pass);
 
@@ -131,6 +131,14 @@ private:
     void setupAxisDescriptorSet();
     void setupGbufferLightingDescriptorSet();
     void setupFramebufferDescriptorSet();
+
+    template<typename T>
+    struct RingBufferAllocation {
+        T* data_ptr;
+        uint32_t dynamic_offset;
+    };
+    template<typename T>
+    RingBufferAllocation<T> allocateRingBufferSpace();
 
     void drawMesh(RenderPipeLineType render_pipeline_type);
     void drawDeferredLighting();

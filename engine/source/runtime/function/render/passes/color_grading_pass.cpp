@@ -19,7 +19,7 @@ void ColorGradingPass::initialize(const RenderPassInitInfo* init_info) {
     m_framebuffer.render_pass                  = _init_info->render_pass; // 会在这里拿到 color grading lut 贴图
 
     setupDescriptorSetLayout();
-    setupPipelines();
+    setupPipeline();
     setupDescriptorSet();
     updateAfterFramebufferRecreate(_init_info->input_attachment);
 }
@@ -55,7 +55,7 @@ void ColorGradingPass::setupDescriptorSetLayout() {
 }
 
 // 设置 graphics pipeline 的相关信息，包括 shader 模块、顶点输入状态、输入装配状态、视口状态、光栅化状态、多重采样状态、颜色混合状态、深度模板状态等
-void ColorGradingPass::setupPipelines() {
+void ColorGradingPass::setupPipeline() {
     m_render_pipelines.resize(1);
 
     RHIDescriptorSetLayout*      descriptorset_layouts[1] = {m_descriptor_infos[0].layout};

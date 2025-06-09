@@ -16,7 +16,7 @@ void CombineUIPass::initialize(const RenderPassInitInfo* init_info) {
     m_framebuffer.render_pass               = _init_info->render_pass;
 
     setupDescriptorSetLayout();
-    setupPipelines();
+    setupPipeline();
     setupDescriptorSet();
     updateAfterFramebufferRecreate(_init_info->scene_input_attachment, _init_info->ui_input_attachment);
 }
@@ -52,7 +52,7 @@ void CombineUIPass::setupDescriptorSetLayout() {
         throw std::runtime_error("create combine ui global layout");
 }
 
-void CombineUIPass::setupPipelines() {
+void CombineUIPass::setupPipeline() {
     m_render_pipelines.resize(1);
 
     RHIDescriptorSetLayout*      descriptorset_layouts[1] = {m_descriptor_infos[0].layout};

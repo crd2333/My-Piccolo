@@ -9,8 +9,8 @@ void DebugDrawManager::initialize() {
     setupPipelines();
 }
 
+// setup pipelines
 void DebugDrawManager::setupPipelines() {
-    //setup pipelines
     for (uint8_t i = 0; i < DebugDrawPipelineType::_debug_draw_pipeline_type_count; i++) {
         m_debug_draw_pipeline[i] = new DebugDrawPipeline((DebugDrawPipelineType)i);
         m_debug_draw_pipeline[i]->initialize();

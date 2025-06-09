@@ -20,7 +20,7 @@ void DirectionalLightShadowPass::initialize(const RenderPassInitInfo* init_info)
     setupDescriptorSetLayout();
 }
 void DirectionalLightShadowPass::postInitialize() {
-    setupPipelines();
+    setupPipeline();
     setupDescriptorSet();
 }
 void DirectionalLightShadowPass::preparePassData(std::shared_ptr<RenderResourceBase> render_resource) {
@@ -205,7 +205,7 @@ void DirectionalLightShadowPass::setupDescriptorSetLayout() {
     if (RHI_SUCCESS != m_rhi->createDescriptorSetLayout(&mesh_point_light_shadow_global_layout_create_info, m_descriptor_infos[0].layout))
         throw std::runtime_error("create mesh directional light shadow global layout");
 }
-void DirectionalLightShadowPass::setupPipelines() {
+void DirectionalLightShadowPass::setupPipeline() {
     m_render_pipelines.resize(1);
 
     RHIDescriptorSetLayout*      descriptorset_layouts[] = {m_descriptor_infos[0].layout, m_per_mesh_layout};

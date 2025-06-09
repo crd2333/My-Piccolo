@@ -16,7 +16,7 @@ void ToneMappingPass::initialize(const RenderPassInitInfo* init_info) {
     m_framebuffer.render_pass                 = _init_info->render_pass;
 
     setupDescriptorSetLayout();
-    setupPipelines();
+    setupPipeline();
     setupDescriptorSet();
     updateAfterFramebufferRecreate(_init_info->input_attachment);
 }
@@ -42,7 +42,7 @@ void ToneMappingPass::setupDescriptorSetLayout() {
     if (RHI_SUCCESS != m_rhi->createDescriptorSetLayout(&post_process_global_layout_create_info, m_descriptor_infos[0].layout))
         throw std::runtime_error("create post process global layout");
 }
-void ToneMappingPass::setupPipelines() {
+void ToneMappingPass::setupPipeline() {
     m_render_pipelines.resize(1);
 
     RHIDescriptorSetLayout*      descriptorset_layouts[1] = {m_descriptor_infos[0].layout};
