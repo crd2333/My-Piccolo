@@ -27,9 +27,11 @@ int main(int argc, char** argv) {
     editor->run();
 
     editor->clear();
+    delete editor;
 
-    engine->clear();
     engine->shutdownEngine();
+    engine->clear();
+    delete engine;
 
     return 0;
 }

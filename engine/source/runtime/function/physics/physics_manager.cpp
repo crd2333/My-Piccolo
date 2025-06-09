@@ -40,7 +40,7 @@ void PhysicsManager::clear() {
 
     #ifdef ENABLE_PHYSICS_DEBUG_RENDERER
     delete m_debug_renderer;
-    m_font = nullptr;
+    delete m_font;
     delete m_renderer;
     #endif
 }

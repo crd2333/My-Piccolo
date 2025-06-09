@@ -1301,8 +1301,7 @@ void ParticlePass::setupParticleDescriptorSet() {
         particlebillboard_descriptor_writes_info[1].dstArrayElement = 0;
         particlebillboard_descriptor_writes_info[1].descriptorType  = RHI_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         particlebillboard_descriptor_writes_info[1].descriptorCount = 1;
-        particlebillboard_descriptor_writes_info[1].pBufferInfo =
-            &particlebillboard_perdrawcall_storage_buffer_info;
+        particlebillboard_descriptor_writes_info[1].pBufferInfo = &particlebillboard_perdrawcall_storage_buffer_info;
 
         RHISampler*          sampler;
         RHISamplerCreateInfo samplerCreateInfo {};

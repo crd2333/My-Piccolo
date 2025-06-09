@@ -37,30 +37,28 @@ public:
     // 3: mesh per material layout
     // 4: sky box layout
     // 5: axis layout
-    // 6: billboard type particle layout
-    // 7: gbuffer lighting
+    // 6: gbuffer lighting layout
     enum LayoutType : uint8_t {
         _per_mesh = 0,
         _mesh_global,
         _mesh_per_material,
         _skybox,
         _axis,
-        _particle,
         _deferred_lighting,
         _layout_type_count
     };
 
-    // 1. model
-    // 2. sky box
-    // 3. axis
-    // 4. billboard type particle
+    // 1. model of gbuffer
+    // 2. model of deferred lighting
+    // 3. model of forward lighting
+    // 4. sky box
+    // 5. axis
     enum RenderPipeLineType : uint8_t {
         _render_pipeline_type_mesh_gbuffer = 0,
         _render_pipeline_type_deferred_lighting,
-        _render_pipeline_type_mesh_lighting,
+        _render_pipeline_type_forward_lighting,
         _render_pipeline_type_skybox,
         _render_pipeline_type_axis,
-        _render_pipeline_type_particle,
         _render_pipeline_type_count
     };
 
@@ -107,17 +105,32 @@ private:
     void setupParticlePass();
     void setupAttachments();
     void setupRenderPass();
-    void setupDescriptorSetLayout();
     void setupPipelines();
-    void setupDescriptorSet();
-    void setupFramebufferDescriptorSet();
+    void setupDescriptorSets();
+    void setupDescriptorSetLayouts();
     void setupSwapchainFramebuffers();
 
-    void setupModelGlobalDescriptorSet();
+    // setup descriptor set layouts
+    void setupPerMeshDescriptorSetLayout();
+    void setupMeshGlobalDescriptorSetLayout();
+    void setupMeshPerMaterialDescriptorSetLayout();
+    void setupSkyboxDescriptorSetLayout();
+    void setupAxisDescriptorSetLayout();
+    void setupDeferredLightingDescriptorSetLayout();
+
+    // setup pipelines
+    void setupMeshGBufferPipeline();
+    void setupDeferredLightingPipeline();
+    void setupForwardLightingPipeline();
+    void setupSkyboxPipeline();
+    void setupAxisPipeline();
+
+    // setup descriptor sets
+    void setupMeshGlobalDescriptorSet();
     void setupSkyboxDescriptorSet();
     void setupAxisDescriptorSet();
-    void setupParticleDescriptorSet();
     void setupGbufferLightingDescriptorSet();
+    void setupFramebufferDescriptorSet();
 
     void drawMesh(RenderPipeLineType render_pipeline_type);
     void drawDeferredLighting();
