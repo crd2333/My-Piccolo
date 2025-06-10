@@ -76,17 +76,17 @@ void RenderPipeline::initialize(RenderPipelineInitInfo init_info) {
 
     ToneMappingPassInitInfo tone_mapping_init_info;
     tone_mapping_init_info.render_pass      = _main_camera_pass->getRenderPass();
-    tone_mapping_init_info.input_attachment = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd];
+    tone_mapping_init_info.input_attachment = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_a];
     m_tone_mapping_pass->initialize(&tone_mapping_init_info);
 
     ColorGradingPassInitInfo color_grading_init_info;
     color_grading_init_info.render_pass      = _main_camera_pass->getRenderPass();
-    color_grading_init_info.input_attachment = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_even];
+    color_grading_init_info.input_attachment = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd];
     m_color_grading_pass->initialize(&color_grading_init_info);
 
     VignettePassInitInfo vignette_init_info;
     vignette_init_info.render_pass      = _main_camera_pass->getRenderPass();
-    vignette_init_info.input_attachment = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd];
+    vignette_init_info.input_attachment = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_post_process_buffer_even];
     m_vignette_pass->initialize(&vignette_init_info);
 
     UIPassInitInfo ui_init_info;
@@ -95,8 +95,13 @@ void RenderPipeline::initialize(RenderPipelineInitInfo init_info) {
 
     CombineUIPassInitInfo combine_ui_init_info;
     combine_ui_init_info.render_pass            = _main_camera_pass->getRenderPass();
-    combine_ui_init_info.scene_input_attachment = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd];
-    combine_ui_init_info.ui_input_attachment    = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_even];
+    if (init_info.enable_fxaa) {
+        combine_ui_init_info.scene_input_attachment = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd];
+        combine_ui_init_info.ui_input_attachment    = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_post_process_buffer_even];
+    } else {
+        combine_ui_init_info.scene_input_attachment = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_post_process_buffer_even];
+        combine_ui_init_info.ui_input_attachment    = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd];
+    }
     m_combine_ui_pass->initialize(&combine_ui_init_info);
 
     PickPassInitInfo pick_init_info;
@@ -211,12 +216,18 @@ void RenderPipeline::passUpdateAfterRecreateSwapchain() {
     ParticlePass     &particle_pass      = *(static_cast<ParticlePass*>(m_particle_pass.get()));
 
     main_camera_pass.updateAfterFramebufferRecreate();
-    tone_mapping_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd]);
-    color_grading_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_even]);
-    vignette_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd]);
-    fxaa_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_even]);
-    combine_ui_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd],
-                                                   main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_even]);
+    tone_mapping_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_a]);
+    color_grading_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd]);
+    vignette_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_even]);
+    fxaa_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd]);
+    if (main_camera_pass.m_enable_fxaa) {
+        combine_ui_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd],
+                                                       main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_even]);
+    } else {
+        combine_ui_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_even],
+                                                       main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd]);
+    }
+
     pick_pass.recreateFramebuffer();
     particle_pass.updateAfterFramebufferRecreate();
     g_runtime_global_context.m_debugdraw_manager->updateAfterRecreateSwapchain();

@@ -53,8 +53,8 @@ void MainCameraPass::setupAttachments() {
     m_framebuffer.attachments[_main_camera_pass_gbuffer_a].format          = RHI_FORMAT_R8G8B8A8_UNORM;
     m_framebuffer.attachments[_main_camera_pass_gbuffer_b].format          = RHI_FORMAT_R8G8B8A8_UNORM;
     m_framebuffer.attachments[_main_camera_pass_gbuffer_c].format          = RHI_FORMAT_R8G8B8A8_SRGB;
-    m_framebuffer.attachments[_main_camera_pass_backup_buffer_odd].format  = RHI_FORMAT_R16G16B16A16_SFLOAT;
-    m_framebuffer.attachments[_main_camera_pass_backup_buffer_even].format = RHI_FORMAT_R16G16B16A16_SFLOAT;
+    m_framebuffer.attachments[_main_camera_pass_backup_buffer_a].format  = RHI_FORMAT_R16G16B16A16_SFLOAT;
+    m_framebuffer.attachments[_main_camera_pass_backup_buffer_b].format = RHI_FORMAT_R16G16B16A16_SFLOAT;
 
     for (int buffer_index = 0; buffer_index < _main_camera_pass_custom_attachment_count; ++buffer_index) {
         if (buffer_index == _main_camera_pass_gbuffer_a) {
@@ -156,18 +156,18 @@ void MainCameraPass::setupRenderPass() {
     gbuffer_albedo_attachment_description.initialLayout  = RHI_IMAGE_LAYOUT_UNDEFINED;
     gbuffer_albedo_attachment_description.finalLayout    = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    RHIAttachmentDescription &backup_odd_color_attachment_description = attachments[_main_camera_pass_backup_buffer_odd];
-    backup_odd_color_attachment_description.format         = m_framebuffer.attachments[_main_camera_pass_backup_buffer_odd].format;
-    backup_odd_color_attachment_description.samples        = RHI_SAMPLE_COUNT_1_BIT;
-    backup_odd_color_attachment_description.loadOp         = RHI_ATTACHMENT_LOAD_OP_CLEAR;
-    backup_odd_color_attachment_description.storeOp        = RHI_ATTACHMENT_STORE_OP_DONT_CARE;
-    backup_odd_color_attachment_description.stencilLoadOp  = RHI_ATTACHMENT_LOAD_OP_DONT_CARE;
-    backup_odd_color_attachment_description.stencilStoreOp = RHI_ATTACHMENT_STORE_OP_DONT_CARE;
-    backup_odd_color_attachment_description.initialLayout  = RHI_IMAGE_LAYOUT_UNDEFINED;
-    backup_odd_color_attachment_description.finalLayout    = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    RHIAttachmentDescription &backup_a_color_attachment_description = attachments[_main_camera_pass_backup_buffer_a];
+    backup_a_color_attachment_description.format         = m_framebuffer.attachments[_main_camera_pass_backup_buffer_a].format;
+    backup_a_color_attachment_description.samples        = RHI_SAMPLE_COUNT_1_BIT;
+    backup_a_color_attachment_description.loadOp         = RHI_ATTACHMENT_LOAD_OP_CLEAR;
+    backup_a_color_attachment_description.storeOp        = RHI_ATTACHMENT_STORE_OP_DONT_CARE;
+    backup_a_color_attachment_description.stencilLoadOp  = RHI_ATTACHMENT_LOAD_OP_DONT_CARE;
+    backup_a_color_attachment_description.stencilStoreOp = RHI_ATTACHMENT_STORE_OP_DONT_CARE;
+    backup_a_color_attachment_description.initialLayout  = RHI_IMAGE_LAYOUT_UNDEFINED;
+    backup_a_color_attachment_description.finalLayout    = RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    RHIAttachmentDescription &backup_even_color_attachment_description = attachments[_main_camera_pass_backup_buffer_even];
-    backup_even_color_attachment_description.format         = m_framebuffer.attachments[_main_camera_pass_backup_buffer_even].format;
+    RHIAttachmentDescription &backup_even_color_attachment_description = attachments[_main_camera_pass_backup_buffer_b];
+    backup_even_color_attachment_description.format         = m_framebuffer.attachments[_main_camera_pass_backup_buffer_b].format;
     backup_even_color_attachment_description.samples        = RHI_SAMPLE_COUNT_1_BIT;
     backup_even_color_attachment_description.loadOp         = RHI_ATTACHMENT_LOAD_OP_CLEAR;
     backup_even_color_attachment_description.storeOp        = RHI_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -279,7 +279,7 @@ void MainCameraPass::setupRenderPass() {
         {_main_camera_pass_depth, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}      // depth_attachment
     };
     std::vector<RHIAttachmentReference> deferred_lighting_pass_color_attachment_reference {
-        {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // backup_odd_color_attachment
+        {_main_camera_pass_backup_buffer_a, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // backup_a_color_attachment
     };
     setSubPass(subpasses[_main_camera_subpass_deferred_lighting],
                &deferred_lighting_pass_input_attachments_reference,
@@ -288,7 +288,7 @@ void MainCameraPass::setupRenderPass() {
                nullptr);
 
     std::vector<RHIAttachmentReference> forward_lighting_pass_color_attachments_reference {
-        {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // backup_odd_color_attachment
+        {_main_camera_pass_backup_buffer_a, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // backup_a_color_attachment
     };
     std::vector<RHIAttachmentReference> forward_lighting_pass_depth_attachment_reference {
         {_main_camera_pass_depth, RHI_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL} // depth_attachment
@@ -300,10 +300,10 @@ void MainCameraPass::setupRenderPass() {
                nullptr);
 
     std::vector<RHIAttachmentReference> tone_mapping_pass_input_attachment_reference {
-        {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL} // backup_odd_color_attachment
+        {_main_camera_pass_backup_buffer_a, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL} // backup_a_color_attachment
     };
     std::vector<RHIAttachmentReference> tone_mapping_pass_color_attachment_reference {
-        {_main_camera_pass_backup_buffer_even, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // backup_even_color_attachment
+        {_main_camera_pass_post_process_buffer_odd, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // post_odd
     };
     setSubPass(subpasses[_main_camera_subpass_tone_mapping],
                &tone_mapping_pass_input_attachment_reference,
@@ -312,10 +312,10 @@ void MainCameraPass::setupRenderPass() {
                nullptr);
 
     std::vector<RHIAttachmentReference> color_grading_pass_input_attachment_reference {
-        {_main_camera_pass_backup_buffer_even, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL} // backup_even_color_attachment
+        {_main_camera_pass_post_process_buffer_odd, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL} // post_odd
     };
     std::vector<RHIAttachmentReference> color_grading_pass_color_attachment_reference {
-        {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // backup_odd_color_attachment
+        {_main_camera_pass_post_process_buffer_even, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // post_even
     };
     setSubPass(subpasses[_main_camera_subpass_color_grading],
                &color_grading_pass_input_attachment_reference,
@@ -324,32 +324,22 @@ void MainCameraPass::setupRenderPass() {
                nullptr);
 
     std::vector<RHIAttachmentReference> vignette_pass_input_attachment_reference {
-        {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL} // backup_odd_color_attachment
+        {_main_camera_pass_post_process_buffer_even, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL} // post_even
     };
-    std::vector<RHIAttachmentReference> vignette_pass_color_attachment_reference;
-    if (m_enable_fxaa) {
-        vignette_pass_color_attachment_reference.push_back( // post_process_even_color_attachment
-            {_main_camera_pass_post_process_buffer_even, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
-    } else {
-        vignette_pass_color_attachment_reference.push_back( // backup_odd_color_attachment
-            {_main_camera_pass_backup_buffer_even, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
-    }
+    std::vector<RHIAttachmentReference> vignette_pass_color_attachment_reference {
+        {_main_camera_pass_post_process_buffer_odd, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}  // post_odd
+    };
     setSubPass(subpasses[_main_camera_subpass_vignette],
                &vignette_pass_input_attachment_reference,
                &vignette_pass_color_attachment_reference,
                nullptr,
                nullptr);
 
-    std::vector<RHIAttachmentReference> fxaa_pass_input_attachment_reference;
-    if (m_enable_fxaa) {
-        fxaa_pass_input_attachment_reference.push_back( // post_process_even_color_attachment
-            {_main_camera_pass_post_process_buffer_even, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
-    } else {
-        fxaa_pass_input_attachment_reference.push_back( // backup_even_color_attachment
-            {_main_camera_pass_backup_buffer_even, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
-    }
+    std::vector<RHIAttachmentReference> fxaa_pass_input_attachment_reference {
+        {_main_camera_pass_post_process_buffer_odd, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}  // post_odd
+    };
     std::vector<RHIAttachmentReference> fxaa_pass_color_attachment_reference {
-        {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // backup_odd_color_attachment
+        {_main_camera_pass_post_process_buffer_even, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // post_even
     };
     setSubPass(subpasses[_main_camera_subpass_fxaa],
                &fxaa_pass_input_attachment_reference,
@@ -357,22 +347,35 @@ void MainCameraPass::setupRenderPass() {
                nullptr,
                nullptr);
 
-    std::vector<RHIAttachmentReference> ui_pass_color_attachment_reference {
-        {_main_camera_pass_backup_buffer_even, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // backup_even_color_attachment
-    };
-    std::vector<uint32_t> ui_pass_preserve_attachment_reference {
-        _main_camera_pass_backup_buffer_odd // backup_odd_color_attachment
-    };
+    std::vector<RHIAttachmentReference> ui_pass_color_attachment_reference;
+    std::vector<uint32_t> ui_pass_preserve_attachment_reference;
+    if (m_enable_fxaa) {
+        ui_pass_color_attachment_reference.push_back(
+            {_main_camera_pass_post_process_buffer_even, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}); // post_even
+        ui_pass_preserve_attachment_reference.push_back(_main_camera_pass_post_process_buffer_odd);   // preserve post_odd
+    } else {
+        ui_pass_color_attachment_reference.push_back(
+            {_main_camera_pass_post_process_buffer_odd, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL}); // post_odd
+        ui_pass_preserve_attachment_reference.push_back(_main_camera_pass_post_process_buffer_even); // preserve post_even
+    }
     setSubPass(subpasses[_main_camera_subpass_ui],
                nullptr,
                &ui_pass_color_attachment_reference,
                nullptr,
                &ui_pass_preserve_attachment_reference);
 
-    std::vector<RHIAttachmentReference> combine_ui_pass_input_attachments_reference {
-        {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}, // backup_odd_color_attachment
-        {_main_camera_pass_backup_buffer_even, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL} // backup_even_color_attachment
-    };
+    std::vector<RHIAttachmentReference> combine_ui_pass_input_attachments_reference;
+    if (m_enable_fxaa) {
+        combine_ui_pass_input_attachments_reference.push_back(
+            {_main_camera_pass_post_process_buffer_even, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}); // post_even
+        combine_ui_pass_input_attachments_reference.push_back(
+            {_main_camera_pass_post_process_buffer_odd, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}); // post_odd
+    } else {
+        combine_ui_pass_input_attachments_reference.push_back(
+            {_main_camera_pass_post_process_buffer_odd, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}); // post_odd
+        combine_ui_pass_input_attachments_reference.push_back(
+            {_main_camera_pass_post_process_buffer_even, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}); // post_even
+    }
     std::vector<RHIAttachmentReference> combine_ui_pass_color_attachment_reference {
         {_main_camera_pass_swap_chain_image, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // swapchain_image_attachment_description
     };
@@ -1591,8 +1594,8 @@ void MainCameraPass::setupSwapchainFramebuffers() {
             m_framebuffer.attachments[_main_camera_pass_gbuffer_a].view,
             m_framebuffer.attachments[_main_camera_pass_gbuffer_b].view,
             m_framebuffer.attachments[_main_camera_pass_gbuffer_c].view,
-            m_framebuffer.attachments[_main_camera_pass_backup_buffer_odd].view,
-            m_framebuffer.attachments[_main_camera_pass_backup_buffer_even].view,
+            m_framebuffer.attachments[_main_camera_pass_backup_buffer_a].view,
+            m_framebuffer.attachments[_main_camera_pass_backup_buffer_b].view,
             m_framebuffer.attachments[_main_camera_pass_post_process_buffer_odd].view,
             m_framebuffer.attachments[_main_camera_pass_post_process_buffer_even].view,
             m_rhi->getDepthImageInfo().depth_image_view,
@@ -1658,8 +1661,8 @@ void MainCameraPass::draw(ColorGradingPass &color_grading_pass,
         clear_values[_main_camera_pass_gbuffer_a].color                = {{0.0f, 0.0f, 0.0f, 0.0f}};
         clear_values[_main_camera_pass_gbuffer_b].color                = {{0.0f, 0.0f, 0.0f, 0.0f}};
         clear_values[_main_camera_pass_gbuffer_c].color                = {{0.0f, 0.0f, 0.0f, 0.0f}};
-        clear_values[_main_camera_pass_backup_buffer_odd].color        = {{0.0f, 0.0f, 0.0f, 1.0f}};
-        clear_values[_main_camera_pass_backup_buffer_even].color       = {{0.0f, 0.0f, 0.0f, 1.0f}};
+        clear_values[_main_camera_pass_backup_buffer_a].color        = {{0.0f, 0.0f, 0.0f, 1.0f}};
+        clear_values[_main_camera_pass_backup_buffer_b].color       = {{0.0f, 0.0f, 0.0f, 1.0f}};
         clear_values[_main_camera_pass_post_process_buffer_odd].color  = {{0.0f, 0.0f, 0.0f, 1.0f}};
         clear_values[_main_camera_pass_post_process_buffer_even].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
         clear_values[_main_camera_pass_depth].depthStencil             = {1.0f, 0};
@@ -1772,8 +1775,8 @@ void MainCameraPass::drawForward(ColorGradingPass &color_grading_pass,
         clear_values[_main_camera_pass_gbuffer_a].color          = {{0.0f, 0.0f, 0.0f, 0.0f}};
         clear_values[_main_camera_pass_gbuffer_b].color          = {{0.0f, 0.0f, 0.0f, 0.0f}};
         clear_values[_main_camera_pass_gbuffer_c].color          = {{0.0f, 0.0f, 0.0f, 0.0f}};
-        clear_values[_main_camera_pass_backup_buffer_odd].color  = {{0.0f, 0.0f, 0.0f, 1.0f}};
-        clear_values[_main_camera_pass_backup_buffer_even].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+        clear_values[_main_camera_pass_backup_buffer_a].color  = {{0.0f, 0.0f, 0.0f, 1.0f}};
+        clear_values[_main_camera_pass_backup_buffer_b].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
         clear_values[_main_camera_pass_depth].depthStencil       = {1.0f, 0};
         clear_values[_main_camera_pass_swap_chain_image].color   = {{0.0f, 0.0f, 0.0f, 1.0f}};
         renderpass_begin_info.clearValueCount                    = (sizeof(clear_values) / sizeof(clear_values[0]));

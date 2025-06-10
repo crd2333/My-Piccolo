@@ -17,9 +17,9 @@ enum {
     _main_camera_pass_gbuffer_a = 0,
     _main_camera_pass_gbuffer_b,
     _main_camera_pass_gbuffer_c,
-    _main_camera_pass_backup_buffer_odd,
-    _main_camera_pass_backup_buffer_even,
-    _main_camera_pass_post_process_buffer_odd,
+    _main_camera_pass_backup_buffer_a,
+    _main_camera_pass_backup_buffer_b,          // 目前还未用到，留空
+    _main_camera_pass_post_process_buffer_odd,  // 用于后处理时左右手来回倒腾
     _main_camera_pass_post_process_buffer_even,
     _main_camera_pass_depth,
     _main_camera_pass_swap_chain_image,
