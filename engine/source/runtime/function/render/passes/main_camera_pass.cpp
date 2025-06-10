@@ -307,21 +307,16 @@ void MainCameraPass::setupRenderPass() {
     };
     setSubPass(subpasses[_main_camera_subpass_tone_mapping],
                &tone_mapping_pass_input_attachment_reference,
-                &tone_mapping_pass_color_attachment_reference,
+               &tone_mapping_pass_color_attachment_reference,
                nullptr,
                nullptr);
 
     std::vector<RHIAttachmentReference> color_grading_pass_input_attachment_reference {
-        {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL} // backup_odd_color_attachment
+        {_main_camera_pass_backup_buffer_even, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL} // backup_even_color_attachment
     };
-    std::vector<RHIAttachmentReference> color_grading_pass_color_attachment_reference;
-    if (m_enable_fxaa) {
-        color_grading_pass_color_attachment_reference.push_back( // backup_even_color_attachment
-            {_main_camera_pass_backup_buffer_even, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
-    } else {
-        color_grading_pass_color_attachment_reference.push_back( // backup_odd_color_attachment
-            {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
-    }
+    std::vector<RHIAttachmentReference> color_grading_pass_color_attachment_reference {
+        {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // backup_odd_color_attachment
+    };
     setSubPass(subpasses[_main_camera_subpass_color_grading],
                &color_grading_pass_input_attachment_reference,
                &color_grading_pass_color_attachment_reference,
@@ -347,14 +342,14 @@ void MainCameraPass::setupRenderPass() {
 
     std::vector<RHIAttachmentReference> fxaa_pass_input_attachment_reference;
     if (m_enable_fxaa) {
-        fxaa_pass_input_attachment_reference.push_back( // post_process_odd_color_attachment
-            {_main_camera_pass_post_process_buffer_odd, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
+        fxaa_pass_input_attachment_reference.push_back( // post_process_even_color_attachment
+            {_main_camera_pass_post_process_buffer_even, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
     } else {
-        fxaa_pass_input_attachment_reference.push_back( // backup_odd_color_attachment
-            {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
+        fxaa_pass_input_attachment_reference.push_back( // backup_even_color_attachment
+            {_main_camera_pass_backup_buffer_even, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
     }
     std::vector<RHIAttachmentReference> fxaa_pass_color_attachment_reference {
-        {_main_camera_pass_backup_buffer_even, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // backup_even_color_attachment
+        {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // backup_odd_color_attachment
     };
     setSubPass(subpasses[_main_camera_subpass_fxaa],
                &fxaa_pass_input_attachment_reference,
@@ -363,10 +358,10 @@ void MainCameraPass::setupRenderPass() {
                nullptr);
 
     std::vector<RHIAttachmentReference> ui_pass_color_attachment_reference {
-        {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // backup_odd_color_attachment
+        {_main_camera_pass_backup_buffer_even, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // backup_even_color_attachment
     };
     std::vector<uint32_t> ui_pass_preserve_attachment_reference {
-        _main_camera_pass_backup_buffer_even // backup_even_color_attachment
+        _main_camera_pass_backup_buffer_odd // backup_odd_color_attachment
     };
     setSubPass(subpasses[_main_camera_subpass_ui],
                nullptr,
@@ -375,8 +370,8 @@ void MainCameraPass::setupRenderPass() {
                &ui_pass_preserve_attachment_reference);
 
     std::vector<RHIAttachmentReference> combine_ui_pass_input_attachments_reference {
-        {_main_camera_pass_backup_buffer_even, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}, // backup_even_color_attachment
-        {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}   // backup_odd_color_attachment
+        {_main_camera_pass_backup_buffer_odd, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}, // backup_odd_color_attachment
+        {_main_camera_pass_backup_buffer_even, RHI_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL} // backup_even_color_attachment
     };
     std::vector<RHIAttachmentReference> combine_ui_pass_color_attachment_reference {
         {_main_camera_pass_swap_chain_image, RHI_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL} // swapchain_image_attachment_description

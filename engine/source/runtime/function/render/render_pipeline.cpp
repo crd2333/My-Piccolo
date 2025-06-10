@@ -95,8 +95,8 @@ void RenderPipeline::initialize(RenderPipelineInitInfo init_info) {
 
     CombineUIPassInitInfo combine_ui_init_info;
     combine_ui_init_info.render_pass            = _main_camera_pass->getRenderPass();
-    combine_ui_init_info.scene_input_attachment = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_even];
-    combine_ui_init_info.ui_input_attachment    = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd];
+    combine_ui_init_info.scene_input_attachment = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd];
+    combine_ui_init_info.ui_input_attachment    = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_even];
     m_combine_ui_pass->initialize(&combine_ui_init_info);
 
     PickPassInitInfo pick_init_info;
@@ -215,8 +215,8 @@ void RenderPipeline::passUpdateAfterRecreateSwapchain() {
     color_grading_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_even]);
     vignette_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd]);
     fxaa_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_even]);
-    combine_ui_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_even],
-                                                   main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd]);
+    combine_ui_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_odd],
+                                                   main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_even]);
     pick_pass.recreateFramebuffer();
     particle_pass.updateAfterFramebufferRecreate();
     g_runtime_global_context.m_debugdraw_manager->updateAfterRecreateSwapchain();
