@@ -79,15 +79,27 @@ void RenderPipeline::initialize(RenderPipelineInitInfo init_info) {
     tone_mapping_init_info.input_attachment = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_backup_buffer_a];
     m_tone_mapping_pass->initialize(&tone_mapping_init_info);
 
+    uint32_t post_process_read_buffer = _main_camera_pass_post_process_buffer_odd;
+    uint32_t post_process_write_buffer = _main_camera_pass_post_process_buffer_even;
+    auto flipPostProcessBuffers = [&]() { std::swap(post_process_read_buffer, post_process_write_buffer); };
     ColorGradingPassInitInfo color_grading_init_info;
     color_grading_init_info.render_pass      = _main_camera_pass->getRenderPass();
-    color_grading_init_info.input_attachment = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd];
+    color_grading_init_info.input_attachment = _main_camera_pass->getFramebufferImageViews()[post_process_read_buffer]; // post_odd
     m_color_grading_pass->initialize(&color_grading_init_info);
+    flipPostProcessBuffers();
 
     VignettePassInitInfo vignette_init_info;
     vignette_init_info.render_pass      = _main_camera_pass->getRenderPass();
-    vignette_init_info.input_attachment = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_post_process_buffer_even];
+    vignette_init_info.input_attachment = _main_camera_pass->getFramebufferImageViews()[post_process_read_buffer]; // post_even
     m_vignette_pass->initialize(&vignette_init_info);
+    flipPostProcessBuffers();
+
+    FXAAPassInitInfo fxaa_init_info;
+    fxaa_init_info.render_pass = _main_camera_pass->getRenderPass();
+    fxaa_init_info.input_attachment = _main_camera_pass->getFramebufferImageViews()[post_process_read_buffer]; // post_odd
+    m_fxaa_pass->initialize(&fxaa_init_info);
+    if (init_info.enable_fxaa)
+        flipPostProcessBuffers();
 
     UIPassInitInfo ui_init_info;
     ui_init_info.render_pass = _main_camera_pass->getRenderPass();
@@ -95,23 +107,13 @@ void RenderPipeline::initialize(RenderPipelineInitInfo init_info) {
 
     CombineUIPassInitInfo combine_ui_init_info;
     combine_ui_init_info.render_pass            = _main_camera_pass->getRenderPass();
-    if (init_info.enable_fxaa) {
-        combine_ui_init_info.scene_input_attachment = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd];
-        combine_ui_init_info.ui_input_attachment    = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_post_process_buffer_even];
-    } else {
-        combine_ui_init_info.scene_input_attachment = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_post_process_buffer_even];
-        combine_ui_init_info.ui_input_attachment    = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd];
-    }
+    combine_ui_init_info.scene_input_attachment = _main_camera_pass->getFramebufferImageViews()[post_process_read_buffer];  // post_even if enable_fxaa
+    combine_ui_init_info.ui_input_attachment    = _main_camera_pass->getFramebufferImageViews()[post_process_write_buffer]; // post_odd if enable_fxaa (no write actually)
     m_combine_ui_pass->initialize(&combine_ui_init_info);
 
     PickPassInitInfo pick_init_info;
     pick_init_info.per_mesh_layout = descriptor_layouts[MainCameraPass::LayoutType::_per_mesh];
     m_pick_pass->initialize(&pick_init_info);
-
-    FXAAPassInitInfo fxaa_init_info;
-    fxaa_init_info.render_pass = _main_camera_pass->getRenderPass();
-    fxaa_init_info.input_attachment = _main_camera_pass->getFramebufferImageViews()[_main_camera_pass_post_process_buffer_even];
-    m_fxaa_pass->initialize(&fxaa_init_info);
 }
 
 void RenderPipeline::forwardRender(std::shared_ptr<RHI> rhi, std::shared_ptr<RenderResourceBase> render_resource) {
@@ -216,17 +218,21 @@ void RenderPipeline::passUpdateAfterRecreateSwapchain() {
     ParticlePass     &particle_pass      = *(static_cast<ParticlePass*>(m_particle_pass.get()));
 
     main_camera_pass.updateAfterFramebufferRecreate();
+
+    // post process
+    uint32_t post_process_read_buffer = _main_camera_pass_post_process_buffer_odd;
+    uint32_t post_process_write_buffer = _main_camera_pass_post_process_buffer_even;
+    auto flipPostProcessBuffers = [&]() { std::swap(post_process_read_buffer, post_process_write_buffer); };
     tone_mapping_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_backup_buffer_a]);
-    color_grading_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd]);
-    vignette_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_even]);
-    fxaa_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd]);
-    if (main_camera_pass.m_enable_fxaa) {
-        combine_ui_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd],
-                                                       main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_even]);
-    } else {
-        combine_ui_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_even],
-                                                       main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd]);
-    }
+    color_grading_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[post_process_read_buffer]); // post_odd
+    flipPostProcessBuffers();
+    vignette_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[post_process_read_buffer]); // post_even
+    flipPostProcessBuffers();
+    fxaa_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[post_process_read_buffer]); // post_odd
+    if (main_camera_pass.m_enable_fxaa)
+        flipPostProcessBuffers();
+    combine_ui_pass.updateAfterFramebufferRecreate(main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_even], // post_even if enable_fxaa
+                                                   main_camera_pass.getFramebufferImageViews()[_main_camera_pass_post_process_buffer_odd]); // post_odd if enable_fxaa (no write actually)
 
     pick_pass.recreateFramebuffer();
     particle_pass.updateAfterFramebufferRecreate();
