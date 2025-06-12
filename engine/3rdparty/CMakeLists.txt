@@ -59,13 +59,21 @@ if(NOT TARGET Jolt)
     endif()
 
     if(ENABLE_PHYSICS_DEBUG_RENDERER)
-        set_target_properties(Jolt TestFramework
-            PROPERTIES 
-            FOLDER ${third_party_folder}/JoltPhysics
-            MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+        if(TARGET TestFramework)
+            set_target_properties(Jolt TestFramework
+                PROPERTIES
+                FOLDER ${third_party_folder}/JoltPhysics
+                MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+        else()
+            message(WARNING "TestFramework target not found, only setting properties for Jolt")
+            set_target_properties(Jolt
+                PROPERTIES
+                FOLDER ${third_party_folder}/JoltPhysics
+                MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+        endif()
     else()
         set_target_properties(Jolt
-            PROPERTIES 
+            PROPERTIES
             FOLDER ${third_party_folder}/JoltPhysics
             MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
     endif()

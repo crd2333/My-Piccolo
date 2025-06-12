@@ -17,8 +17,8 @@
 #include <skybox_frag.h>
 #include <skybox_vert.h>
 
-// TODO: auto filp
-// TODO: render pipeline as asset (no hard code)
+// TODO: render pipeline as asset (not hard code)
+// TODO: Cancelable (configurable) subpass
 
 namespace Piccolo {
 void MainCameraPass::initialize(const RenderPassInitInfo* init_info) {

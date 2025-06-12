@@ -8,10 +8,10 @@
             "name": "PiccoloEditor",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/engine/source/editor/Debug/PiccoloEditor.exe",
+            "program": "${workspaceFolder}/bin/PiccoloEditor.exe",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/bin",
             "environment": [],
             "preLaunchTask": "build"
         }
