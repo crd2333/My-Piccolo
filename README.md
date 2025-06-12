@@ -20,6 +20,7 @@ Or you can use the following command to generate the **Visual Studio** project f
 ```
 cmake -S . -B build
 ```
+> -DENABLE_PHYSICS_DEBUG_RENDERER=ON parameter has bug in my environment (after a small change it can be started up but looks very strange...)
 
 To generate compilation database:
 ``` powershell
